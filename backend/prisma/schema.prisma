@@ -1,0 +1,47 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        Int      @id @default(autoincrement())
+  email     String   @unique
+  password  String
+  name      String
+  cars      Car[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Car {
+  id          Int          @id @default(autoincrement())
+  userId      Int
+  user        User         @relation(fields: [userId], references: [id])
+  name        String
+  brand       String
+  model       String
+  otherSpecs  String?
+  fuelRecords FuelRecord[]
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+}
+
+model FuelRecord {
+  id               Int      @id @default(autoincrement())
+  carId            Int
+  car              Car      @relation(fields: [carId], references: [id])
+  date             DateTime @default(now())
+  fuelCost         Float    
+  pricePerLitre    Float    
+  odometer         Float    
+  litresRefueled   Float    
+  distanceTraveled Float    
+  consumptionRate  Float?   
+  isFullTank       Boolean  @default(true)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+}
