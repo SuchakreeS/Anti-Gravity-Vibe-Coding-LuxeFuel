@@ -50,7 +50,7 @@ const findAccessibleCar = async (carId, user) => {
 export const addFuelRecord = async (req, res) => {
   try {
     const carId = parseInt(req.params.carId);
-    
+
     const car = await findAccessibleCar(carId, req.user);
     if (!car) return res.status(404).json({ message: 'Car not found' });
 
@@ -81,9 +81,9 @@ export const addFuelRecord = async (req, res) => {
 
       if (lastFullTank) {
         const partialFills = await prisma.fuelRecord.findMany({
-          where: { 
-             carId, 
-             odometer: { gt: lastFullTank.odometer, lt: odometer }
+          where: {
+            carId,
+            odometer: { gt: lastFullTank.odometer, lt: odometer }
           }
         });
 
@@ -131,7 +131,7 @@ export const addFuelRecord = async (req, res) => {
 export const getFuelRecords = async (req, res) => {
   try {
     const carId = parseInt(req.params.carId);
-    
+
     const car = await findAccessibleCar(carId, req.user);
     if (!car) return res.status(404).json({ message: 'Car not found' });
 
@@ -209,6 +209,7 @@ export const updateFuelRecord = async (req, res) => {
 
     // Save before-state for audit
     const beforeState = {
+      carId: existingRecord.carId,
       fuelCost: existingRecord.fuelCost,
       pricePerLitre: existingRecord.pricePerLitre,
       odometer: existingRecord.odometer,
@@ -218,15 +219,15 @@ export const updateFuelRecord = async (req, res) => {
 
     const updateData = {};
     if (fuelCost !== undefined && pricePerLitre !== undefined) {
-       updateData.fuelCost = fuelCost;
-       updateData.pricePerLitre = pricePerLitre;
-       updateData.litresRefueled = fuelCost / pricePerLitre;
+      updateData.fuelCost = fuelCost;
+      updateData.pricePerLitre = pricePerLitre;
+      updateData.litresRefueled = fuelCost / pricePerLitre;
     } else if (fuelCost !== undefined) {
-       updateData.fuelCost = fuelCost;
-       updateData.litresRefueled = fuelCost / existingRecord.pricePerLitre;
+      updateData.fuelCost = fuelCost;
+      updateData.litresRefueled = fuelCost / existingRecord.pricePerLitre;
     } else if (pricePerLitre !== undefined) {
-       updateData.pricePerLitre = pricePerLitre;
-       updateData.litresRefueled = existingRecord.fuelCost / pricePerLitre;
+      updateData.pricePerLitre = pricePerLitre;
+      updateData.litresRefueled = existingRecord.fuelCost / pricePerLitre;
     }
 
     if (odometer !== undefined) updateData.odometer = odometer;
@@ -244,6 +245,7 @@ export const updateFuelRecord = async (req, res) => {
     await createAuditLog('UPDATE', 'FuelRecord', recordId, req.user.id, req.user.organizationId, {
       before: beforeState,
       after: {
+        carId: beforeState.carId,
         fuelCost: updateData.fuelCost ?? beforeState.fuelCost,
         pricePerLitre: updateData.pricePerLitre ?? beforeState.pricePerLitre,
         odometer: updateData.odometer ?? beforeState.odometer,

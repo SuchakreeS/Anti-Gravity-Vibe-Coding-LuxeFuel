@@ -6,7 +6,8 @@ function AuditTrailTab({
   auditPage, auditPagination,
   handleApplyAuditFilters, handleAuditPageChange,
   members, loading, auditLogs,
-  formatAuditDetails
+  formatAuditDetails,
+  cars
 }) {
   return (
     <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="card bg-base-100 shadow-xl">
@@ -93,7 +94,11 @@ function AuditTrailTab({
                       <div>
                         <span className="font-medium">{log.user?.name || 'Unknown'}</span>
                         <span className="opacity-50 mx-1">→</span>
-                        <span className="opacity-70">{log.entityType} #{log.entityId}</span>
+                        <span className="opacity-70">
+                          {details?._resolvedEntityName 
+                            ? `Car: ${details._resolvedEntityName}` 
+                            : `${log.entityType} #${log.entityId}`}
+                        </span>
                       </div>
                     </div>
                     <div className="text-xs opacity-40 text-right whitespace-nowrap">
@@ -109,32 +114,68 @@ function AuditTrailTab({
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                           <div className="p-2 bg-error/10 rounded-lg border border-error/20">
                             <div className="text-xs font-semibold text-error mb-1">Before</div>
-                            {Object.entries(details.before).map(([key, val]) => (
-                              <div key={key} className="flex justify-between text-xs py-0.5">
-                                <span className="opacity-60">{key}:</span>
-                                <span className="font-mono">{typeof val === 'object' ? JSON.stringify(val) : String(val)}</span>
-                              </div>
-                            ))}
+                            {Object.entries(details.before).filter(([k]) => !k.startsWith('_') && k!=='carLicensePlate').map(([key, val]) => {
+                              let displayKey = key;
+                              let displayVal = typeof val === 'object' ? JSON.stringify(val) : String(val);
+                              if (key === 'carId') {
+                                displayKey = 'Car';
+                                if (details.before.carLicensePlate) displayVal = details.before.carLicensePlate;
+                                else {
+                                  const car = cars?.find(c => c.id === val);
+                                  if (car) displayVal = car.licensePlate || car.name || val;
+                                }
+                              }
+                              return (
+                                <div key={key} className="flex justify-between text-xs py-0.5">
+                                  <span className="opacity-60">{displayKey}:</span>
+                                  <span className="font-mono">{displayVal}</span>
+                                </div>
+                              );
+                            })}
                           </div>
                           <div className="p-2 bg-success/10 rounded-lg border border-success/20">
                             <div className="text-xs font-semibold text-success mb-1">After</div>
-                            {Object.entries(details.after).map(([key, val]) => (
-                              <div key={key} className="flex justify-between text-xs py-0.5">
-                                <span className="opacity-60">{key}:</span>
-                                <span className="font-mono">{typeof val === 'object' ? JSON.stringify(val) : String(val)}</span>
-                              </div>
-                            ))}
+                            {Object.entries(details.after).filter(([k]) => !k.startsWith('_') && k!=='carLicensePlate').map(([key, val]) => {
+                              let displayKey = key;
+                              let displayVal = typeof val === 'object' ? JSON.stringify(val) : String(val);
+                              if (key === 'carId') {
+                                displayKey = 'Car';
+                                if (details.after.carLicensePlate) displayVal = details.after.carLicensePlate;
+                                else {
+                                  const car = cars?.find(c => c.id === val);
+                                  if (car) displayVal = car.licensePlate || car.name || val;
+                                }
+                              }
+                              return (
+                                <div key={key} className="flex justify-between text-xs py-0.5">
+                                  <span className="opacity-60">{displayKey}:</span>
+                                  <span className="font-mono">{displayVal}</span>
+                                </div>
+                              );
+                            })}
                           </div>
                         </div>
                       )}
                       {details.type === 'data' && (
                         <div className="p-2 bg-base-300 rounded-lg">
-                          {Object.entries(details.data).map(([key, val]) => (
-                            <div key={key} className="flex justify-between text-xs py-0.5">
-                              <span className="opacity-60">{key}:</span>
-                              <span className="font-mono">{typeof val === 'object' ? JSON.stringify(val) : String(val)}</span>
-                            </div>
-                          ))}
+                          {Object.entries(details.data).filter(([k]) => !k.startsWith('_') && k!=='carLicensePlate').map(([key, val]) => {
+                            let displayKey = key;
+                            let displayVal = typeof val === 'object' ? JSON.stringify(val) : String(val);
+                            if (key === 'carId') {
+                              displayKey = 'Car';
+                              if (details.data.carLicensePlate) displayVal = details.data.carLicensePlate;
+                              else {
+                                const car = cars?.find(c => c.id === val);
+                                if (car) displayVal = car.licensePlate || car.name || val;
+                              }
+                            }
+                            return (
+                              <div key={key} className="flex justify-between text-xs py-0.5">
+                                <span className="opacity-60">{displayKey}:</span>
+                                <span className="font-mono">{displayVal}</span>
+                              </div>
+                            );
+                          })}
                         </div>
                       )}
                     </div>

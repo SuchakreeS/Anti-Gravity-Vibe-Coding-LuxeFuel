@@ -17,7 +17,7 @@ export const getAuditLogs = async (req, res) => {
 
     const skip = (parseInt(page) - 1) * parseInt(limit);
 
-    const [logs, total] = await Promise.all([
+    const [rawLogs, total] = await Promise.all([
       prisma.auditLog.findMany({
         where,
         include: {
@@ -29,6 +29,62 @@ export const getAuditLogs = async (req, res) => {
       }),
       prisma.auditLog.count({ where })
     ]);
+
+    // Extract all referenced car Ids
+    const carIds = new Set();
+    rawLogs.forEach(log => {
+      if (log.entityType === 'Car') carIds.add(log.entityId);
+      if (log.details) {
+        try {
+          const details = JSON.parse(log.details);
+          if (details.carId) carIds.add(details.carId);
+          if (details.before?.carId) carIds.add(details.before.carId);
+          if (details.after?.carId) carIds.add(details.after.carId);
+        } catch(e) {}
+      }
+    });
+
+    // Fetch car display info
+    const cars = await prisma.car.findMany({
+      where: { id: { in: Array.from(carIds) } },
+      select: { id: true, name: true, licensePlate: true }
+    });
+    const carMap = {};
+    cars.forEach(c => carMap[c.id] = c);
+
+    // Patch the logs before returning
+    const logs = rawLogs.map(log => {
+      const logCopy = { ...log };
+      if (log.details) {
+        try {
+          const details = JSON.parse(log.details);
+          if (details.carId && carMap[details.carId]) {
+            details.carLicensePlate = carMap[details.carId].licensePlate || carMap[details.carId].name;
+          }
+          if (details.before?.carId && carMap[details.before.carId]) {
+            details.before.carLicensePlate = carMap[details.before.carId].licensePlate || carMap[details.before.carId].name;
+          }
+          if (details.after?.carId && carMap[details.after.carId]) {
+            details.after.carLicensePlate = carMap[details.after.carId].licensePlate || carMap[details.after.carId].name;
+          }
+          
+          // Add resolved car name for root entity display
+          if (log.entityType === 'Car' && carMap[log.entityId]) {
+             details._resolvedEntityName = carMap[log.entityId].licensePlate || carMap[log.entityId].name;
+          } else if (log.entityType === 'FuelRecord' && details.carLicensePlate) {
+             details._resolvedEntityName = details.carLicensePlate;
+          }
+          
+          logCopy.details = JSON.stringify(details);
+        } catch(e) {}
+      } else {
+        // Create an empty details object just to hold _resolvedEntityName
+        if (log.entityType === 'Car' && carMap[log.entityId]) {
+           logCopy.details = JSON.stringify({ _resolvedEntityName: carMap[log.entityId].licensePlate || carMap[log.entityId].name });
+        }
+      }
+      return logCopy;
+    });
 
     res.json({
       logs,

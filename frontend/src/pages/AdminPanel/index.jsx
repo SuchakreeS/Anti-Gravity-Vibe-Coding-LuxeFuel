@@ -17,7 +17,7 @@ function AdminPanel() {
     fetchOrganization, fetchMembers, addMember, removeMember, fetchAuditLogs
   } = useOrganization();
   const { 
-    orgCars, addCar, makes, models, loadingMakes, loadingModels, fetchMakes, fetchModels 
+    cars, orgCars, addCar, makes, models, loadingMakes, loadingModels, fetchMakes, fetchModels 
   } = useCars(user);
 
   const [activeTab, setActiveTab] = useState('members');
@@ -178,6 +178,7 @@ function AdminPanel() {
             loading={loading}
             auditLogs={auditLogs}
             formatAuditDetails={formatAuditDetails}
+            cars={cars}
           />
         )}
 
