@@ -14,13 +14,25 @@ export const getProfile = async (req, res) => {
     const user = await prisma.user.findUnique({
       where: { id: req.user.id },
       select: { 
-        id: true, name: true, email: true, role: true, 
+        id: true, name: true, email: true, role: true, plan: true,
         organizationId: true, createdAt: true, updatedAt: true,
-        organization: { select: { id: true, name: true } }
+        organization: { select: { id: true, name: true, plan: true } }
       }
     });
     if (!user) return res.status(404).json({ message: 'User not found' });
-    res.json(user);
+    
+    res.json({
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      role: user.role,
+      plan: user.plan,
+      organizationId: user.organizationId,
+      organizationName: user.organization?.name || null,
+      orgPlan: user.organization?.plan || null,
+      createdAt: user.createdAt,
+      updatedAt: user.updatedAt
+    });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -57,13 +69,24 @@ export const updateProfile = async (req, res) => {
       where: { id: req.user.id },
       data: updateData,
       select: { 
-        id: true, name: true, email: true, role: true,
+        id: true, name: true, email: true, role: true, plan: true,
         organizationId: true, createdAt: true, updatedAt: true,
-        organization: { select: { id: true, name: true } }
+        organization: { select: { id: true, name: true, plan: true } }
       }
     });
 
-    res.json(updated);
+    res.json({
+      id: updated.id,
+      name: updated.name,
+      email: updated.email,
+      role: updated.role,
+      plan: updated.plan,
+      organizationId: updated.organizationId,
+      organizationName: updated.organization?.name || null,
+      orgPlan: updated.organization?.plan || null,
+      createdAt: updated.createdAt,
+      updatedAt: updated.updatedAt
+    });
   } catch (error) {
     if (error instanceof z.ZodError) return res.status(400).json({ errors: error.errors });
     res.status(500).json({ message: error.message });

@@ -4,23 +4,23 @@ import { motion } from 'framer-motion';
 function AddCarModal({ onAddCar, makes, models, fetchModels, loadingMakes, loadingModels, userRole = 'individual' }) {
   const [newCarForm, setNewCarForm] = useState({ name: '', brand: '', model: '', licensePlate: '', otherSpecs: '' });
   const [isManualEntry, setIsManualEntry] = useState(false);
-  const [useOwnCar, setUseOwnCar] = useState(userRole === 'user'); // org users default to own car
+  const [useOwnCar, setUseOwnCar] = useState(userRole === 'user' || userRole === 'USER' || userRole === 'DRIVER'); // org users default to own car
 
   const handleSubmit = (e) => {
     e.preventDefault();
     const carData = { ...newCarForm };
     
     // For org users choosing "use own car", mark as personal
-    if (userRole === 'user') {
+    if (userRole === 'user' || userRole === 'USER' || userRole === 'DRIVER') {
       carData.isPersonal = true;
-    } else if (userRole === 'admin') {
+    } else if (userRole === 'admin' || userRole === 'ADMIN') {
       carData.isPersonal = useOwnCar;
     }
     
     onAddCar(carData);
   };
 
-  const isOrgMember = userRole === 'admin' || userRole === 'user';
+  const isOrgMember = ['admin', 'user', 'ADMIN', 'USER', 'DRIVER'].includes(userRole);
 
   return (
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
@@ -34,14 +34,14 @@ function AddCarModal({ onAddCar, makes, models, fetchModels, loadingMakes, loadi
           <p className="text-base-content/70 mb-4">To get started with tracking your fuel consumption, please add your first car details below.</p>
 
           {/* Use own car toggle for org users */}
-          {userRole === 'user' && (
+          {(userRole === 'user' || userRole === 'USER' || userRole === 'DRIVER') && (
             <div className="alert alert-info mb-3 py-2">
               <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
               <span className="text-sm">You're adding a personal car. Your organization admin manages fleet cars.</span>
             </div>
           )}
 
-          {userRole === 'admin' && (
+          {(userRole === 'admin' || userRole === 'ADMIN') && (
             <div className="form-control mb-3 p-3 bg-base-200 rounded-lg">
               <label className="label cursor-pointer justify-start gap-3">
                 <input 

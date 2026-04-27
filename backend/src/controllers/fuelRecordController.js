@@ -203,7 +203,7 @@ export const updateFuelRecord = async (req, res) => {
     if (!existingRecord) return res.status(404).json({ message: 'Record not found' });
 
     // Org users can only edit records they submitted
-    if (req.user.role === 'user' && existingRecord.submittedById !== req.user.id) {
+    if (req.user.role === 'USER' && existingRecord.submittedById !== req.user.id) {
       return res.status(403).json({ message: 'You can only edit records you submitted' });
     }
 
@@ -270,7 +270,7 @@ export const deleteFuelRecord = async (req, res) => {
     if (!car) return res.status(404).json({ message: 'Car not found' });
 
     // Org users (role === 'user') cannot delete records
-    if (req.user.role === 'user') {
+    if (req.user.role === 'USER') {
       return res.status(403).json({ message: 'You do not have permission to delete records' });
     }
 

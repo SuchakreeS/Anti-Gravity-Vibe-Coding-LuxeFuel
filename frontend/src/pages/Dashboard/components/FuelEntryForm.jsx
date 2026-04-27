@@ -62,6 +62,11 @@ function FuelEntryForm({ selectedCar, onAddFuel, stats, onClose }) {
 
             <label className="text-sm opacity-70 mt-2">Current Mileage (km)</label>
             <input required type="number" step="0.1" className="input [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none input-sm input-bordered" value={fuelFormData.odometer} onChange={e => setFuelFormData({ ...fuelFormData, odometer: e.target.value })} />
+            {stats?.latest && (
+              <span className="text-[10px] opacity-40 -mt-1 block ml-1">
+                Previous: {stats.latest.odometer.toLocaleString()} km
+              </span>
+            )}
 
             <label className="text-sm opacity-70 mt-2">Date & Time</label>
             <input required type="datetime-local" className="input input-sm input-bordered" value={fuelFormData.date} onChange={e => setFuelFormData({ ...fuelFormData, date: e.target.value })} />

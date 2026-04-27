@@ -8,6 +8,7 @@ const carSchema = z.object({
   model: z.string().min(1),
   licensePlate: z.string().optional(),
   otherSpecs: z.string().optional(),
+  maintenanceData: z.string().optional(),
   isPersonal: z.boolean().optional().default(false),
 });
 
@@ -24,9 +25,10 @@ export const createCar = async (req, res) => {
       model: data.model,
       licensePlate: data.licensePlate || null,
       otherSpecs: data.otherSpecs || null,
+      maintenanceData: data.maintenanceData || null,
     };
 
-    if (role === 'admin') {
+    if (role === 'ADMIN') {
       if (data.isPersonal) {
         // Admin adding their own personal car
         carData.isPersonal = true;
@@ -39,7 +41,7 @@ export const createCar = async (req, res) => {
           return res.status(400).json({ message: 'License plate is required for organization cars' });
         }
       }
-    } else if (role === 'user') {
+    } else if (role === 'USER') {
       // Org user can only create personal cars
       carData.isPersonal = true;
       carData.userId = userId;
@@ -67,7 +69,7 @@ export const getCars = async (req, res) => {
     const orgId = req.user.organizationId;
 
     let cars;
-    if (orgId && (role === 'admin' || role === 'user')) {
+    if (orgId && (role === 'ADMIN' || role === 'USER')) {
       // Return org cars + user's personal cars
       cars = await prisma.car.findMany({
         where: {
@@ -132,7 +134,7 @@ export const updateCar = async (req, res) => {
 
     // Only admin can update org cars; anyone can update their personal cars
     let existing;
-    if (role === 'admin' && orgId) {
+    if (role === 'ADMIN' && orgId) {
       existing = await prisma.car.findFirst({
         where: {
           id,
@@ -157,6 +159,7 @@ export const updateCar = async (req, res) => {
         model: data.model,
         licensePlate: data.licensePlate || existing.licensePlate,
         otherSpecs: data.otherSpecs || null,
+        maintenanceData: data.maintenanceData || existing.maintenanceData,
       }
     });
     res.json(car);

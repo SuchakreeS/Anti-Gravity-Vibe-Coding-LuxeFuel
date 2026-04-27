@@ -19,11 +19,26 @@ export const useAuthStore = create(
       updateUser: (userData) => set((state) => ({
         user: state.user ? { ...state.user, ...userData } : null
       })),
-      // Role helpers
-      isAdmin: () => get().user?.role === 'admin',
-      isOrgUser: () => get().user?.role === 'user',
-      isIndividual: () => get().user?.role === 'individual' || !get().user?.role,
-      isOrgMember: () => ['admin', 'user'].includes(get().user?.role),
+      // Role & Plan helpers
+      isAdmin: () => {
+        const user = get().user;
+        return user?.role === 'ADMIN' || user?.role === 'admin';
+      },
+      isDriver: () => get().user?.role === 'DRIVER',
+      isOrgUser: () => ['ADMIN', 'DRIVER', 'USER', 'admin', 'user'].includes(get().user?.role),
+      isIndividual: () => get().user?.role === 'INDIVIDUAL' || !get().user?.role || get().user?.role === 'individual',
+      isOrgMember: () => get().isOrgUser(),
+      
+      // Feature Gating
+      hasPlan: (requiredPlan) => {
+        const user = get().user;
+        const currentPlan = (user?.orgPlan || user?.plan || 'FREE').toUpperCase();
+        const plans = ['FREE', 'PRO', 'ENTERPRISE'];
+        return plans.indexOf(currentPlan) >= plans.indexOf(requiredPlan.toUpperCase());
+      },
+      canAccessMaintenance: () => get().hasPlan('PRO'),
+      canExportPDF: () => get().hasPlan('PRO'),
+      canAccessAuditLog: () => get().hasPlan('ENTERPRISE') && get().isAdmin(),
     }),
     {
       name: 'luxefuel-auth',

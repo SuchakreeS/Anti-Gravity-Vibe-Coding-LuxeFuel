@@ -14,7 +14,7 @@ export const requireRole = (...roles) => {
   };
 };
 
-export const requireAdmin = requireRole('admin');
+export const requireAdmin = requireRole('ADMIN');
 
 /**
  * Require that the user belongs to an organization (admin or user role).

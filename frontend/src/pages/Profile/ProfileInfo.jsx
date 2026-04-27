@@ -18,10 +18,20 @@ function ProfileInfo({ handleUpdateProfile, profileForm, setProfileForm, badge, 
             <label className="label"><span className="label-text font-medium">Email</span></label>
             <input required type="email" className="input input-bordered" value={profileForm.email} onChange={e => setProfileForm({ ...profileForm, email: e.target.value })} />
           </div>
-          <div className="flex items-center gap-2 mt-1">
+          <div className="flex flex-wrap items-center gap-2 mt-1">
             <span className={`badge ${badge.class}`}>{badge.text}</span>
-            {profile?.organization && (
-              <span className="text-sm opacity-50">@ {profile.organization.name}</span>
+            {profile?.plan && (
+              <span className={`badge badge-outline ${profile.plan === 'FREE' ? 'badge-ghost' : profile.plan === 'PRO' ? 'badge-primary' : 'badge-secondary'}`}>
+                {profile.plan} PLAN
+              </span>
+            )}
+            {profile?.orgPlan && profile.orgPlan !== profile.plan && (
+              <span className="badge badge-outline badge-accent">
+                ORG: {profile.orgPlan}
+              </span>
+            )}
+            {profile?.organizationName && (
+              <span className="text-sm opacity-50">@ {profile.organizationName}</span>
             )}
           </div>
           {profile && (

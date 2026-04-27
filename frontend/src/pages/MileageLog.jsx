@@ -9,6 +9,7 @@ import Layout from '../components/Layout';
 function MileageLog() {
   const { user } = useAuthStore();
   const isOrgUser = useAuthStore((state) => state.isOrgUser);
+  const canExportPDF = useAuthStore((state) => state.canExportPDF);
   const { convert, formatPrice } = useCurrencyStore();
   const { cars, orgCars, personalCars, selectedCar, setSelectedCar } = useCars(user);
   const { records, updateRecord, deleteRecord } = useFuelRecords(selectedCar?.id);
@@ -101,8 +102,17 @@ function MileageLog() {
         {/* Mileage Log */}
         <motion.div initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ delay: 0.1 }} className="card bg-base-100 shadow-xl">
           <div className="card-body">
-            <h2 className="card-title text-2xl border-b border-base-300 pb-2">
-              📋 Mileage Log {selectedCar && <span className="text-base opacity-50 font-normal">— {selectedCar.name}</span>}
+            <h2 className="card-title text-2xl border-b border-base-300 pb-2 flex justify-between items-center w-full">
+              <div>
+                📋 Mileage Log {selectedCar && <span className="text-base opacity-50 font-normal">— {selectedCar.name}</span>}
+              </div>
+              <button 
+                disabled={!canExportPDF()}
+                className={`btn btn-sm ${canExportPDF() ? 'btn-primary' : 'btn-ghost opacity-50 cursor-not-allowed'}`}
+                onClick={() => alert('Exporting PDF...')}
+              >
+                {canExportPDF() ? '📄 Export PDF' : '🔒 Export PDF (PRO)'}
+              </button>
             </h2>
             <div className="flex flex-col gap-4 mt-2">
               {!selectedCar ? (

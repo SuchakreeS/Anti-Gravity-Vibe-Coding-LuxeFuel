@@ -8,24 +8,32 @@ import FuelEntryForm from './Dashboard/components/FuelEntryForm';
 import DashboardCharts from './Dashboard/components/DashboardCharts';
 import AddCarModal from './Dashboard/components/AddCarModal';
 import DashboardStats from './Dashboard/components/DashboardStats';
+import MaintenanceCard from '../components/dashboard/MaintenanceCard';
+import { estimateCurrentMileage } from '../utils/maintenance';
+import { useVehicleStore } from '../store/useVehicleStore';
+import MaintenanceForm from '../components/MaintenanceForm';
 
 function Dashboard() {
   const { user } = useAuthStore();
   const isAdmin = useAuthStore((state) => state.isAdmin);
   const isOrgUser = useAuthStore((state) => state.isOrgUser);
+  const canAccessMaintenance = useAuthStore((state) => state.canAccessMaintenance);
+
   const { 
     cars, 
-    orgCars,
-    personalCars,
     selectedCar, 
     setSelectedCar, 
+    fetchCars,
+    loading: loadingCars
+  } = useVehicleStore();
+
+  const { 
     makes, 
     models, 
     loadingMakes, 
     loadingModels, 
     fetchModels, 
-    addCar,
-    fetchCars
+    addCar 
   } = useCars(user);
 
   const { 
@@ -37,17 +45,18 @@ function Dashboard() {
 
   const [showAddCarModal, setShowAddCarModal] = useState(false);
   const [showFuelModal, setShowFuelModal] = useState(false);
+  const [showMaintenanceModal, setShowMaintenanceModal] = useState(false);
 
   useEffect(() => {
     if (cars.length === 0 && user) {
       fetchCars().then(data => {
-        if (data.length === 0) setShowAddCarModal(true);
+        if (data && data.length === 0) setShowAddCarModal(true);
       });
     } else if (cars.length > 0) {
       if (!selectedCar) setSelectedCar(cars[0]);
       setShowAddCarModal(false);
     }
-  }, [cars, user, selectedCar, setSelectedCar, fetchCars]);
+  }, [cars.length, user, selectedCar, setSelectedCar, fetchCars]);
 
   const handleAddFuel = async (payload) => {
     if (!selectedCar) return;
@@ -58,6 +67,7 @@ function Dashboard() {
     const newCar = await addCar(carData);
     if (newCar) {
       setShowAddCarModal(false);
+      fetchCars(); // Refresh store
       setSelectedCar(newCar);
     }
   };
@@ -76,10 +86,10 @@ function Dashboard() {
               <h2 className="card-title text-primary border-b border-base-300 pb-2">Select Car</h2>
               
               {/* Org cars group */}
-              {orgCars.length > 0 && (
+              {cars.filter(c => !c.isPersonal).length > 0 && (
                 <div className="mb-2">
                   <label className="text-xs font-bold uppercase opacity-40 mb-1 block">Organization Fleet</label>
-                  {orgCars.map(c => (
+                  {cars.filter(c => !c.isPersonal).map(c => (
                     <button
                       key={c.id}
                       className={`w-full text-left p-2 rounded-lg mb-1 transition-all text-sm ${
@@ -97,12 +107,12 @@ function Dashboard() {
               )}
 
               {/* Personal cars group */}
-              {personalCars.length > 0 && (
+              {cars.filter(c => c.isPersonal).length > 0 && (
                 <div>
-                  {orgCars.length > 0 && (
+                  {cars.filter(c => !c.isPersonal).length > 0 && (
                     <label className="text-xs font-bold uppercase opacity-40 mb-1 block">Personal Cars</label>
                   )}
-                  {personalCars.map(c => (
+                  {cars.filter(c => c.isPersonal).map(c => (
                     <button
                       key={c.id}
                       className={`w-full text-left p-2 rounded-lg mb-1 transition-all text-sm ${
@@ -144,6 +154,15 @@ function Dashboard() {
           {selectedCar && stats && (
              <DashboardStats stats={stats} />
           )}
+
+          {/* Maintenance Card (Gated) */}
+          {selectedCar && canAccessMaintenance() && (
+            <MaintenanceCard 
+              car={selectedCar} 
+              currentMileage={estimateCurrentMileage(records[records.length - 1])} 
+              onOpenService={() => setShowMaintenanceModal(true)}
+            />
+          )}
         </div>
 
         {/* Graphs Area */}
@@ -177,6 +196,14 @@ function Dashboard() {
           onAddFuel={handleAddFuel} 
           stats={stats}
           onClose={() => setShowFuelModal(false)}
+        />
+      )}
+      {showMaintenanceModal && selectedCar && (
+        <MaintenanceForm 
+          isOpen={showMaintenanceModal}
+          onClose={() => setShowMaintenanceModal(false)}
+          carId={selectedCar.id}
+          currentOdometer={estimateCurrentMileage(records[records.length - 1])}
         />
       )}
     </Layout>

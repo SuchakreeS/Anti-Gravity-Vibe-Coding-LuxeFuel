@@ -149,6 +149,10 @@ function Profile() {
   const canAddCar = !isOrgUser() || true; // org users can add personal cars
 
   const roleBadge = {
+    ADMIN: { text: 'Organization Admin', class: 'badge-primary' },
+    USER: { text: 'Organization Member', class: 'badge-secondary' },
+    DRIVER: { text: 'Fleet Driver', class: 'badge-accent' },
+    INDIVIDUAL: { text: 'Individual', class: 'badge-ghost' },
     admin: { text: 'Organization Admin', class: 'badge-primary' },
     user: { text: 'Organization Member', class: 'badge-secondary' },
     individual: { text: 'Individual', class: 'badge-ghost' },

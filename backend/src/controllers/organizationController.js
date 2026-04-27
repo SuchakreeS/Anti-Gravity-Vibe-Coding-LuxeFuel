@@ -52,7 +52,7 @@ export const createMember = async (req, res) => {
         email,
         password: hashedPassword,
         name,
-        role: 'user',
+        role: 'USER',
         organizationId: req.user.organizationId
       },
       select: { id: true, name: true, email: true, role: true, createdAt: true }
@@ -84,7 +84,7 @@ export const removeMember = async (req, res) => {
       return res.status(404).json({ message: 'Member not found' });
     }
 
-    if (member.role === 'admin') {
+    if (member.role === 'ADMIN') {
       return res.status(400).json({ message: 'Cannot remove an admin' });
     }
 

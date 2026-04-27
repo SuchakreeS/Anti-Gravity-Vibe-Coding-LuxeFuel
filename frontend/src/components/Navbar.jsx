@@ -17,6 +17,10 @@ function Navbar() {
   const symbol = getSymbol();
 
   const roleBadge = {
+    ADMIN: { text: 'Admin', class: 'badge-primary' },
+    USER: { text: 'User', class: 'badge-ghost' },
+    DRIVER: { text: 'Driver', class: 'badge-accent' },
+    INDIVIDUAL: { text: '', class: '' },
     admin: { text: 'Admin', class: 'badge-primary' },
     user: { text: 'User', class: 'badge-ghost' },
     individual: { text: '', class: '' },

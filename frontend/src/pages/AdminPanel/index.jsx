@@ -12,6 +12,7 @@ import AuditTrailTab from './AuditTrailTab';
 
 function AdminPanel() {
   const { user } = useAuthStore();
+  const canAccessAuditLog = useAuthStore((state) => state.canAccessAuditLog);
   const { 
     orgInfo, members, auditLogs, auditPagination, loading,
     fetchOrganization, fetchMembers, addMember, removeMember, fetchAuditLogs
@@ -105,7 +106,9 @@ function AdminPanel() {
   const tabs = [
     { id: 'members', label: '👥 Members', count: members.length },
     { id: 'cars', label: '🚗 Fleet', count: orgCars.length },
-    { id: 'audit', label: '📋 Audit Trail', count: auditPagination?.total || 0 },
+    ...(canAccessAuditLog() ? [
+      { id: 'audit', label: '📋 Audit Trail', count: auditPagination?.total || 0 }
+    ] : []),
   ];
 
   return (

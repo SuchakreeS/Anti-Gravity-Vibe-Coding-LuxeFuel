@@ -7,9 +7,23 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+enum Plan {
+  FREE
+  PRO
+  ENTERPRISE
+}
+
+enum Role {
+  ADMIN
+  DRIVER
+  USER
+  INDIVIDUAL
+}
+
 model Organization {
   id        Int        @id @default(autoincrement())
   name      String     @unique
+  plan      Plan       @default(FREE)
   users     User[]
   cars      Car[]
   auditLogs AuditLog[]
@@ -22,7 +36,8 @@ model User {
   email          String        @unique
   password       String
   name           String
-  role           String        @default("individual")
+  role           Role          @default(INDIVIDUAL)
+  plan           Plan          @default(FREE)
   organizationId Int?
   organization   Organization? @relation(fields: [organizationId], references: [id])
   cars           Car[]
@@ -33,20 +48,23 @@ model User {
 }
 
 model Car {
-  id             Int           @id @default(autoincrement())
-  name           String
-  brand          String
-  model          String
-  licensePlate   String?
-  otherSpecs     String?
-  isPersonal     Boolean       @default(false)
-  userId         Int?
-  user           User?         @relation(fields: [userId], references: [id])
-  organizationId Int?
-  organization   Organization? @relation(fields: [organizationId], references: [id])
-  fuelRecords    FuelRecord[]
-  createdAt      DateTime      @default(now())
-  updatedAt      DateTime      @updatedAt
+  id                  Int           @id @default(autoincrement())
+  name                String
+  brand               String
+  model               String
+  licensePlate        String?
+  otherSpecs          String?
+  isPersonal          Boolean       @default(false)
+  lastServiceMileage  Float         @default(0)
+  serviceInterval     Float         @default(10000)
+  userId              Int?
+  user                User?         @relation(fields: [userId], references: [id])
+  organizationId      Int?
+  organization        Organization? @relation(fields: [organizationId], references: [id])
+  fuelRecords         FuelRecord[]
+  maintenanceData     String?       @db.Text
+  createdAt           DateTime      @default(now())
+  updatedAt           DateTime      @updatedAt
 }
 
 model FuelRecord {

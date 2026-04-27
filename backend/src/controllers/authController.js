@@ -30,7 +30,7 @@ export const register = async (req, res) => {
     }
     const hashedPassword = await bcrypt.hash(password, 10);
     const user = await prisma.user.create({
-      data: { email, password: hashedPassword, name, role: 'individual' }
+      data: { email, password: hashedPassword, name, role: 'INDIVIDUAL' }
     });
     
     res.status(201).json({ message: 'User registered successfully' });
@@ -69,7 +69,7 @@ export const registerOrganization = async (req, res) => {
           email,
           password: hashedPassword,
           name,
-          role: 'admin',
+          role: 'ADMIN',
           organizationId: org.id
         }
       });
@@ -94,7 +94,7 @@ export const login = async (req, res) => {
     const { email, password } = loginSchema.parse(req.body);
     const user = await prisma.user.findUnique({ 
       where: { email },
-      include: { organization: { select: { id: true, name: true } } }
+      include: { organization: { select: { id: true, name: true, plan: true } } }
     });
     if (!user) {
       return res.status(401).json({ message: 'Invalid credentials' });
@@ -115,8 +115,10 @@ export const login = async (req, res) => {
         email: user.email, 
         name: user.name,
         role: user.role,
+        plan: user.plan,
         organizationId: user.organizationId,
-        organizationName: user.organization?.name || null
+        organizationName: user.organization?.name || null,
+        orgPlan: user.organization?.plan || null
       } 
     });
   } catch (error) {
