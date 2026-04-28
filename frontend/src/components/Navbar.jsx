@@ -29,9 +29,9 @@ function Navbar() {
   const badge = roleBadge[user?.role] || roleBadge.individual;
 
   return (
-    <div className="navbar bg-base-100 shadow-xl rounded-box mb-6 px-6 relative z-[100]">
+    <div className="navbar bg-carbon border border-industrial-border shadow-2xl rounded-box mb-6 px-6 relative z-[100]">
       <div className="flex-1">
-        <Link to="/" className="text-2xl font-bold text-primary tracking-wide">LuxeFuel</Link>
+        <Link to="/" className="text-2xl font-black text-neon-violet tracking-tighter uppercase italic drop-shadow-[0_0_8px_rgba(168,85,247,0.5)]">LuxeFuel</Link>
         {user?.organizationName && (
           <span className="ml-3 text-sm opacity-50 hidden sm:inline">
             {user.organizationName}
@@ -77,14 +77,14 @@ function Navbar() {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
             </svg>
           </label>
-          <ul tabIndex={0} className="dropdown-content menu p-2 shadow-lg bg-base-100 rounded-box w-48 z-[110]">
-            <li><Link to="/">📊 Dashboard</Link></li>
-            <li><Link to="/mileage-log">📋 Mileage Log</Link></li>
-            <li><Link to="/profile">👤 Profile</Link></li>
+          <ul tabIndex={0} className="dropdown-content menu p-2 shadow-2xl bg-carbon border border-industrial-border rounded-box w-48 z-[110]">
+            <li><Link to="/" className="hover:bg-jdm-purple hover:text-white transition-all">📊 Dashboard</Link></li>
+            <li><Link to="/mileage-log" className="hover:bg-jdm-purple hover:text-white transition-all">📋 Mileage Log</Link></li>
+            <li><Link to="/profile" className="hover:bg-jdm-purple hover:text-white transition-all">👤 Profile</Link></li>
             {isAdmin() && (
-              <li><Link to="/admin">⚙️ Admin Panel</Link></li>
+              <li><Link to="/admin" className="hover:bg-jdm-purple hover:text-white transition-all">⚙️ Admin Panel</Link></li>
             )}
-            <li><button onClick={logout}>🚪 Logout</button></li>
+            <li><button onClick={logout} className="hover:bg-error hover:text-error-content transition-all">🚪 Logout</button></li>
           </ul>
         </div>
       </div>

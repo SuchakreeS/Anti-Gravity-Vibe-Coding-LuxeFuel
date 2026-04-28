@@ -24,7 +24,10 @@ const MaintenanceCard = ({ car, currentMileage, onOpenService }) => {
     };
   });
 
-  const overallHealth = Math.min(...categoryHealths.map(c => c.health));
+  const overallHealth = Math.round(
+    categoryHealths.reduce((sum, c) => sum + c.health, 0) / categoryHealths.length
+  );
+  const minHealth = Math.min(...categoryHealths.map(c => c.health));
   const healthColor = getHealthColor(overallHealth);
   
   return (
@@ -79,7 +82,7 @@ const MaintenanceCard = ({ car, currentMileage, onOpenService }) => {
 
         <div className="mt-4 pt-4 border-t border-slate-800 flex items-center justify-between">
           <span className="text-[10px] text-slate-500 font-bold italic uppercase">
-            {overallHealth < 30 ? '⚠ IMMEDIATE SERVICE REQUIRED' : overallHealth < 80 ? '⚙ SERVICE RECOMMENDED SOON' : '✔ OPTIMAL CONDITION'}
+            {minHealth < 30 ? '⚠ IMMEDIATE SERVICE REQUIRED' : minHealth < 80 ? '⚙ SERVICE RECOMMENDED SOON' : '✔ OPTIMAL CONDITION'}
           </span>
           <button 
             onClick={onOpenService}

@@ -1,6 +1,45 @@
+@import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@300;400;500;600;700&display=swap');
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+:root {
+  /* Base Colors */
+  --background: #050508;      /* Deep Asphalt */
+  --surface: #0F111A;         /* Carbon Slate */
+  --border: #1E293B;          /* Industrial Navy */
+  
+  /* JDM Accents */
+  --midnight-purple: #280137; /* R34 Midnight Purple II */
+  --neon-violet: #A855F7;     /* Digital Glow */
+  --turbo-orange: #F97316;    /* Warning/Heat Accent */
+  
+  /* Text */
+  --text-primary: #F8FAFC;
+  --text-secondary: #94A3B8;
+}
+
+@layer utilities {
+  .shadow-neon {
+    box-shadow: 0 0 15px rgba(168, 85, 247, 0.4);
+  }
+  .shadow-neon-hover:hover {
+    box-shadow: 0 0 25px rgba(168, 85, 247, 0.6);
+  }
+  @keyframes scanline {
+    0% { transform: translateY(-100%); }
+    100% { transform: translateY(1000%); }
+  }
+  .animate-scanline {
+    animation: scanline 2s linear infinite;
+  }
+}
+
+/* Global Styles */
+body {
+  background-color: var(--background);
+  color: var(--text-primary);
+}
 
 /* Hide spin buttons from number inputs */
 input::-webkit-outer-spin-button,

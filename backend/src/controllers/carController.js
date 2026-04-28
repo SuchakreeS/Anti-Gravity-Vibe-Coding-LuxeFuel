@@ -6,9 +6,9 @@ const carSchema = z.object({
   name: z.string().min(1),
   brand: z.string().min(1),
   model: z.string().min(1),
-  licensePlate: z.string().optional(),
-  otherSpecs: z.string().optional(),
-  maintenanceData: z.string().optional(),
+  licensePlate: z.string().nullable().optional(),
+  otherSpecs: z.string().nullable().optional(),
+  maintenanceData: z.string().nullable().optional(),
   isPersonal: z.boolean().optional().default(false),
 });
 

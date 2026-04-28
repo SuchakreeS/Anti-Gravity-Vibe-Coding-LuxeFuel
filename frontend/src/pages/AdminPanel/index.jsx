@@ -4,7 +4,7 @@ import { useAuthStore } from '../../store/useAuthStore';
 import { useOrganization } from '../../hooks/useOrganization';
 import { useCars } from '../../hooks/useCars';
 import Layout from '../../components/Layout';
-import Swal from 'sweetalert2';
+import { cyberToast } from '../../components/CyberToast';
 
 import MembersTab from './MembersTab';
 import FleetTab from './FleetTab';
@@ -58,15 +58,8 @@ function AdminPanel() {
   };
 
   const handleRemoveMember = async (memberId, memberName) => {
-    const confirm = await Swal.fire({
-      title: `Remove ${memberName}?`,
-      text: 'This will permanently remove this member and their personal data.',
-      icon: 'warning',
-      showCancelButton: true,
-      confirmButtonText: 'Yes, remove',
-      confirmButtonColor: '#ef4444'
-    });
-    if (confirm.isConfirmed) {
+    const confirmed = await cyberToast.confirm(`Remove ${memberName}? This will permanently remove this member and their personal data.`);
+    if (confirmed) {
       await removeMember(memberId);
     }
   };

@@ -3,8 +3,10 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { MAINTENANCE_CATEGORIES } from '../utils/maintenance';
 import { useVehicleStore } from '../store/useVehicleStore';
 import { useFuelRecords } from '../hooks/useFuelRecords';
+import { useCurrencyStore } from '../store/useCurrencyStore';
 
 const MaintenanceForm = ({ isOpen, onClose, carId, currentOdometer }) => {
+  const { currency, symbol, convert } = useCurrencyStore();
   const [selectedCategory, setSelectedCategory] = useState('engineOil');
   const [formData, setFormData] = useState({
     odometer: currentOdometer || '',
@@ -18,10 +20,13 @@ const MaintenanceForm = ({ isOpen, onClose, carId, currentOdometer }) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     
+    const rate = convert(1);
+    const toTHB = (val) => rate ? val / rate : val;
+
     const servicePayload = {
       odometer: parseFloat(formData.odometer),
       serviceDate: formData.serviceDate,
-      cost: parseFloat(formData.cost),
+      cost: toTHB(parseFloat(formData.cost)),
     };
 
     // 1. Update maintenance object in store/backend
@@ -142,10 +147,10 @@ const MaintenanceForm = ({ isOpen, onClose, carId, currentOdometer }) => {
 
                   <div className="group">
                     <label className="text-slate-500 text-[10px] uppercase font-black tracking-tighter mb-2 block group-focus-within:text-emerald-500 transition-colors">
-                      Total Cost (฿)
+                      Total Cost ({currency})
                     </label>
                     <div className="relative">
-                      <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-600 font-bold">฿</span>
+                      <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-600 font-bold">{symbol()}</span>
                       <input
                         required
                         type="number"

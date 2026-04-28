@@ -4,13 +4,12 @@ import { motion } from 'framer-motion';
 function AddCarModal({ onAddCar, makes, models, fetchModels, loadingMakes, loadingModels, userRole = 'individual' }) {
   const [newCarForm, setNewCarForm] = useState({ name: '', brand: '', model: '', licensePlate: '', otherSpecs: '' });
   const [isManualEntry, setIsManualEntry] = useState(false);
-  const [useOwnCar, setUseOwnCar] = useState(userRole === 'user' || userRole === 'USER' || userRole === 'DRIVER'); // org users default to own car
+  const [useOwnCar, setUseOwnCar] = useState(userRole === 'user' || userRole === 'USER' || userRole === 'DRIVER');
 
   const handleSubmit = (e) => {
     e.preventDefault();
     const carData = { ...newCarForm };
     
-    // For org users choosing "use own car", mark as personal
     if (userRole === 'user' || userRole === 'USER' || userRole === 'DRIVER') {
       carData.isPersonal = true;
     } else if (userRole === 'admin' || userRole === 'ADMIN') {
@@ -23,75 +22,82 @@ function AddCarModal({ onAddCar, makes, models, fetchModels, loadingMakes, loadi
   const isOrgMember = ['admin', 'user', 'ADMIN', 'USER', 'DRIVER'].includes(userRole);
 
   return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
+    <div className="fixed inset-0 bg-asphalt/80 backdrop-blur-md z-[100] flex items-center justify-center p-4 font-['Rajdhani']">
       <motion.div
-        initial={{ scale: 0.9, opacity: 0 }}
-        animate={{ scale: 1, opacity: 1 }}
-        className="card bg-base-100 shadow-2xl max-w-md w-full border border-primary/20"
+        initial={{ scale: 0.9, opacity: 0, y: 20 }}
+        animate={{ scale: 1, opacity: 1, y: 0 }}
+        className="card bg-carbon shadow-2xl max-w-md w-full border border-industrial-border overflow-hidden"
       >
-        <div className="card-body">
-          <h2 className="card-title text-2xl text-primary mb-2">Welcome to LuxeFuel!</h2>
-          <p className="text-base-content/70 mb-4">To get started with tracking your fuel consumption, please add your first car details below.</p>
+        <div className="h-1.5 bg-neon-violet shadow-neon" />
+        <div className="card-body p-8">
+          <h2 className="text-3xl font-black italic uppercase text-white mb-1 tracking-tighter">Initialize Vehicle</h2>
+          <p className="text-text-secondary font-medium uppercase tracking-widest text-xs mb-6">System calibration required for first deployment</p>
 
-          {/* Use own car toggle for org users */}
           {(userRole === 'user' || userRole === 'USER' || userRole === 'DRIVER') && (
-            <div className="alert alert-info mb-3 py-2">
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-              <span className="text-sm">You're adding a personal car. Your organization admin manages fleet cars.</span>
+            <div className="bg-neon-violet/10 border border-neon-violet/20 rounded-sm p-3 mb-4 flex items-start gap-3">
+              <span className="text-neon-violet text-xl">ℹ</span>
+              <p className="text-[10px] font-bold text-neon-violet uppercase tracking-widest leading-relaxed">
+                Personal Vehicle profile detected. Fleet assets are managed by regional command.
+              </p>
             </div>
           )}
 
           {(userRole === 'admin' || userRole === 'ADMIN') && (
-            <div className="form-control mb-3 p-3 bg-base-200 rounded-lg">
-              <label className="label cursor-pointer justify-start gap-3">
+            <div className="bg-carbon border border-industrial-border rounded-sm p-4 mb-4">
+              <label className="flex items-center justify-between cursor-pointer">
+                <div>
+                  <span className="text-xs font-black uppercase tracking-widest text-white">Individual Ownership</span>
+                  <p className="text-[10px] text-text-secondary uppercase tracking-widest mt-1">
+                    {useOwnCar ? 'Marking as personal vehicle' : 'Adding to fleet inventory'}
+                  </p>
+                </div>
                 <input 
                   type="checkbox" 
-                  className="toggle toggle-primary toggle-sm" 
+                  className="toggle toggle-secondary border-industrial-border" 
                   checked={useOwnCar}
                   onChange={e => setUseOwnCar(e.target.checked)} 
                 />
-                <div>
-                  <span className="label-text font-medium">Use my own car</span>
-                  <p className="text-xs opacity-50 mt-0.5">
-                    {useOwnCar ? 'This will be your personal car' : 'This car will be added to the organization fleet'}
-                  </p>
-                </div>
               </label>
             </div>
           )}
 
-          <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-            <div className="form-control">
-              <label className="label py-1"><span className="label-text font-medium opacity-70">Car Name</span></label>
-              <input required placeholder="e.g. My Daily Driver" className="input input-bordered" value={newCarForm.name} onChange={e => setNewCarForm({ ...newCarForm, name: e.target.value })} />
+          <form onSubmit={handleSubmit} className="flex flex-col gap-5">
+            <div className="space-y-1">
+              <label className="text-[10px] font-black uppercase tracking-widest text-text-secondary ml-1">Vehicle Callsign (Name)</label>
+              <input 
+                required 
+                placeholder="E.G. GHOST-01" 
+                className="w-full bg-asphalt border border-industrial-border rounded-sm px-4 py-3 text-white placeholder:text-slate-700 focus:outline-none focus:border-neon-violet transition-all duration-300 uppercase font-bold italic"
+                value={newCarForm.name} 
+                onChange={e => setNewCarForm({ ...newCarForm, name: e.target.value })} 
+              />
             </div>
 
-            <div className="form-control">
-              <label className="label py-1"><span className="label-text font-medium opacity-70">License Plate</span></label>
+            <div className="space-y-1">
+              <label className="text-[10px] font-black uppercase tracking-widest text-text-secondary ml-1">License Identifier</label>
               <input 
-                placeholder="e.g. กข-1234" 
-                className="input input-bordered" 
+                placeholder="E.G. SKY-LINE-34" 
+                className="w-full bg-asphalt border border-industrial-border rounded-sm px-4 py-3 text-white placeholder:text-slate-700 focus:outline-none focus:border-neon-violet transition-all duration-300 uppercase font-bold italic"
                 required={isOrgMember}
                 value={newCarForm.licensePlate} 
                 onChange={e => setNewCarForm({ ...newCarForm, licensePlate: e.target.value })} 
               />
-              {!isOrgMember && <span className="text-xs opacity-40 mt-1">Optional for individual accounts</span>}
             </div>
 
-            <div className="form-control">
-              <div className="flex justify-between items-center mb-1">
-                <span className="text-sm font-medium opacity-70">Brand & Model</span>
-                <label className="label cursor-pointer p-0 gap-2">
-                  <span className="label-text text-xs opacity-50">Manual entry</span> 
-                  <input type="checkbox" className="checkbox checkbox-xs" checked={isManualEntry} onChange={e => setIsManualEntry(e.target.checked)} />
+            <div className="space-y-2">
+              <div className="flex justify-between items-center px-1">
+                <label className="text-[10px] font-black uppercase tracking-widest text-text-secondary">Manufacturer Data</label>
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <span className="text-[9px] font-bold text-text-secondary uppercase tracking-widest">Manual Entry</span>
+                  <input type="checkbox" className="checkbox checkbox-xs border-industrial-border" checked={isManualEntry} onChange={e => setIsManualEntry(e.target.checked)} />
                 </label>
               </div>
 
               {!isManualEntry ? (
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-2 gap-3">
                   <select 
                     required 
-                    className={`select select-bordered w-full ${loadingMakes ? 'loading' : ''}`}
+                    className="bg-asphalt border border-industrial-border rounded-sm px-3 py-2.5 text-white focus:outline-none focus:border-neon-violet uppercase font-bold text-xs"
                     value={newCarForm.brand}
                     onChange={e => {
                       const val = e.target.value;
@@ -99,35 +105,32 @@ function AddCarModal({ onAddCar, makes, models, fetchModels, loadingMakes, loadi
                       fetchModels(val);
                     }}
                   >
-                    <option value="">Select Brand</option>
+                    <option value="">Brand</option>
                     {makes.map(m => <option key={m.id} value={m.name}>{m.name}</option>)}
                   </select>
 
                   <select 
                     required 
-                    className={`select select-bordered w-full ${loadingModels ? 'loading' : ''}`}
+                    className="bg-asphalt border border-industrial-border rounded-sm px-3 py-2.5 text-white focus:outline-none focus:border-neon-violet uppercase font-bold text-xs"
                     disabled={!newCarForm.brand || loadingModels}
                     value={newCarForm.model}
                     onChange={e => setNewCarForm({ ...newCarForm, model: e.target.value })}
                   >
-                    <option value="">{loadingModels ? 'Loading...' : 'Select Model'}</option>
+                    <option value="">{loadingModels ? 'SYNCING...' : 'Model'}</option>
                     {models.map(m => <option key={m.id} value={m.name}>{m.name}</option>)}
                   </select>
                 </div>
               ) : (
-                <div className="grid grid-cols-2 gap-4">
-                  <input required placeholder="Brand (e.g. Toyota)" className="input input-bordered" value={newCarForm.brand} onChange={e => setNewCarForm({ ...newCarForm, brand: e.target.value })} />
-                  <input required placeholder="Model (e.g. Corolla)" className="input input-bordered" value={newCarForm.model} onChange={e => setNewCarForm({ ...newCarForm, model: e.target.value })} />
+                <div className="grid grid-cols-2 gap-3">
+                  <input required placeholder="BRAND" className="w-full bg-asphalt border border-industrial-border rounded-sm px-4 py-2.5 text-white placeholder:text-slate-700 focus:outline-none focus:border-neon-violet transition-all duration-300 uppercase font-bold text-xs" value={newCarForm.brand} onChange={e => setNewCarForm({ ...newCarForm, brand: e.target.value })} />
+                  <input required placeholder="MODEL" className="w-full bg-asphalt border border-industrial-border rounded-sm px-4 py-2.5 text-white placeholder:text-slate-700 focus:outline-none focus:border-neon-violet transition-all duration-300 uppercase font-bold text-xs" value={newCarForm.model} onChange={e => setNewCarForm({ ...newCarForm, model: e.target.value })} />
                 </div>
               )}
             </div>
 
-            <div className="form-control">
-              <label className="label py-1"><span className="label-text font-medium opacity-70">Other Specs (Optional)</span></label>
-              <input placeholder="2024 Hybrid" className="input input-bordered" value={newCarForm.otherSpecs} onChange={e => setNewCarForm({ ...newCarForm, otherSpecs: e.target.value })} />
-            </div>
-
-            <button className="btn btn-primary mt-4 shadow-lg">🚀 Get Started</button>
+            <button className="w-full bg-neon-violet hover:bg-white hover:text-asphalt text-white py-4 rounded-sm font-black text-xl uppercase tracking-tighter shadow-neon transition-all duration-300 mt-2">
+              Sync Vehicle // START
+            </button>
           </form>
         </div>
       </motion.div>

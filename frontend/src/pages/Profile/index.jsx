@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useAuthStore } from '../../store/useAuthStore';
 import api from '../../utils/api';
-import Swal from 'sweetalert2';
+import { cyberToast } from '../../components/CyberToast';
 import Layout from '../../components/Layout';
 import { useCars } from '../../hooks/useCars';
 
@@ -64,16 +64,17 @@ function Profile() {
       const res = await api.put('/users/profile', profileForm);
       setProfile(res.data);
       updateUser({ name: res.data.name, email: res.data.email });
-      Swal.fire('Success', 'Profile updated!', 'success');
+      cyberToast.success('Profile Updated // Data Synced');
     } catch (err) {
-      Swal.fire('Error', err.response?.data?.message || 'Failed to update profile', 'error');
+      cyberToast.error(err.response?.data?.message || 'Failed to update profile');
     }
   };
 
   const handleChangePassword = async (e) => {
     e.preventDefault();
     if (passwordForm.newPassword !== passwordForm.confirmPassword) {
-      return Swal.fire('Error', 'Passwords do not match', 'error');
+      cyberToast.error('Passwords do not match');
+      return;
     }
     try {
       await api.put('/users/profile', {
@@ -81,9 +82,9 @@ function Profile() {
         newPassword: passwordForm.newPassword
       });
       setPasswordForm({ currentPassword: '', newPassword: '', confirmPassword: '' });
-      Swal.fire('Success', 'Password changed successfully!', 'success');
+      cyberToast.success('Security Key Rotated // Password Changed');
     } catch (err) {
-      Swal.fire('Error', err.response?.data?.message || 'Failed to change password', 'error');
+      cyberToast.error(err.response?.data?.message || 'Failed to change password');
     }
   };
 
@@ -98,28 +99,21 @@ function Profile() {
       const res = await api.put(`/cars/${editingCar.id}`, carForm);
       setCars(cars.map(c => c.id === editingCar.id ? res.data : c));
       setEditingCar(null);
-      Swal.fire('Success', 'Car updated!', 'success');
+      cyberToast.success('Vehicle Updated // Config Saved');
     } catch (err) {
-      Swal.fire('Error', err.response?.data?.message || 'Failed to update car', 'error');
+      cyberToast.error(err.response?.data?.message || 'Failed to update car');
     }
   };
 
   const handleDeleteCar = async (carId) => {
-    const confirm = await Swal.fire({
-      title: 'Delete Car?',
-      text: 'This will permanently delete the car and ALL its fuel records!',
-      icon: 'warning',
-      showCancelButton: true,
-      confirmButtonText: 'Yes, delete it!',
-      confirmButtonColor: '#ef4444'
-    });
-    if (confirm.isConfirmed) {
+    const confirmed = await cyberToast.confirm('This will permanently delete the car and ALL its fuel records. Continue?');
+    if (confirmed) {
       try {
         await api.delete(`/cars/${carId}`);
         setCars(cars.filter(c => c.id !== carId));
-        Swal.fire('Deleted!', 'Car and records removed.', 'success');
+        cyberToast.warning('Vehicle Purged // Records Cleared');
       } catch (err) {
-        Swal.fire('Error', err.response?.data?.message || 'Failed to delete car', 'error');
+        cyberToast.error(err.response?.data?.message || 'Failed to delete car');
       }
     }
   };
@@ -138,9 +132,9 @@ function Profile() {
       setNewCarForm({ name: '', brand: '', model: '', licensePlate: '', otherSpecs: '' });
       setAddingCar(false);
       setUseOwnCar(false);
-      Swal.fire('Success', 'Car added!', 'success');
+      cyberToast.success('Vehicle Synced // Added to Fleet');
     } catch (err) {
-      Swal.fire('Error', err.response?.data?.message || 'Failed to add car', 'error');
+      cyberToast.error(err.response?.data?.message || 'Failed to add car');
     }
   };
 

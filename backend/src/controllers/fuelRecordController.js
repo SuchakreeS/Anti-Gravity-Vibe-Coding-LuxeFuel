@@ -2,9 +2,9 @@ import prisma from '../prismaClient.js';
 import { z } from 'zod';
 
 const fuelRecordSchema = z.object({
-  fuelCost: z.number().positive(),
-  pricePerLitre: z.number().positive(),
-  odometer: z.number().positive(),
+  fuelCost: z.number().nonnegative(),
+  pricePerLitre: z.number().nonnegative(),
+  odometer: z.number().nonnegative(),
   isFullTank: z.boolean().default(true),
   date: z.string().optional().refine((val) => !val || !isNaN(Date.parse(val)), {
     message: "Invalid date format",
@@ -55,45 +55,7 @@ export const addFuelRecord = async (req, res) => {
     if (!car) return res.status(404).json({ message: 'Car not found' });
 
     const { fuelCost, pricePerLitre, odometer, isFullTank, date } = fuelRecordSchema.parse(req.body);
-
-    const litresRefueled = fuelCost / pricePerLitre;
-
-    const previousRecord = await prisma.fuelRecord.findFirst({
-      where: { carId },
-      orderBy: { odometer: 'desc' },
-    });
-
-    let distanceTraveled = 0;
-    if (previousRecord) {
-      if (odometer <= previousRecord.odometer) {
-        return res.status(400).json({ message: 'Odometer must be greater than previous reading (' + previousRecord.odometer + ')' });
-      }
-      distanceTraveled = odometer - previousRecord.odometer;
-    }
-
-    let consumptionRate = null;
-
-    if (isFullTank && previousRecord) {
-      const lastFullTank = await prisma.fuelRecord.findFirst({
-        where: { carId, isFullTank: true, odometer: { lt: odometer } },
-        orderBy: { odometer: 'desc' }
-      });
-
-      if (lastFullTank) {
-        const partialFills = await prisma.fuelRecord.findMany({
-          where: {
-            carId,
-            odometer: { gt: lastFullTank.odometer, lt: odometer }
-          }
-        });
-
-        const totalPartialLitres = partialFills.reduce((sum, f) => sum + f.litresRefueled, 0);
-        const totalLitresConsumed = totalPartialLitres + litresRefueled;
-        const totalDistance = odometer - lastFullTank.odometer;
-
-        consumptionRate = totalDistance / totalLitresConsumed;
-      }
-    }
+    const litresRefueled = pricePerLitre > 0 ? (fuelCost / pricePerLitre) : 0;
 
     const record = await prisma.fuelRecord.create({
       data: {
@@ -102,13 +64,16 @@ export const addFuelRecord = async (req, res) => {
         pricePerLitre,
         odometer,
         litresRefueled,
-        distanceTraveled,
-        consumptionRate,
+        distanceTraveled: 0, // Will be recalculated
+        consumptionRate: null, // Will be recalculated
         isFullTank,
         submittedById: req.user.id,
         date: date ? new Date(date) : undefined
       }
     });
+
+    // Recalculate everything in correct order
+    await recalculateCarHistory(carId);
 
     // Audit log
     await createAuditLog('CREATE', 'FuelRecord', record.id, req.user.id, req.user.organizationId, {
@@ -140,7 +105,11 @@ export const getFuelRecords = async (req, res) => {
       include: {
         submittedBy: { select: { id: true, name: true } }
       },
-      orderBy: { date: 'asc' }
+      orderBy: [
+        { odometer: 'asc' },
+        { date: 'asc' },
+        { id: 'asc' }
+      ]
     });
 
     res.json(records);
@@ -152,7 +121,11 @@ export const getFuelRecords = async (req, res) => {
 const recalculateCarHistory = async (carId) => {
   const records = await prisma.fuelRecord.findMany({
     where: { carId },
-    orderBy: { odometer: 'asc' }
+    orderBy: [
+      { odometer: 'asc' },
+      { date: 'asc' },
+      { id: 'asc' }
+    ]
   });
 
   if (records.length === 0) return;
@@ -221,13 +194,13 @@ export const updateFuelRecord = async (req, res) => {
     if (fuelCost !== undefined && pricePerLitre !== undefined) {
       updateData.fuelCost = fuelCost;
       updateData.pricePerLitre = pricePerLitre;
-      updateData.litresRefueled = fuelCost / pricePerLitre;
+      updateData.litresRefueled = pricePerLitre > 0 ? (fuelCost / pricePerLitre) : 0;
     } else if (fuelCost !== undefined) {
       updateData.fuelCost = fuelCost;
-      updateData.litresRefueled = fuelCost / existingRecord.pricePerLitre;
+      updateData.litresRefueled = existingRecord.pricePerLitre > 0 ? (fuelCost / existingRecord.pricePerLitre) : 0;
     } else if (pricePerLitre !== undefined) {
       updateData.pricePerLitre = pricePerLitre;
-      updateData.litresRefueled = existingRecord.fuelCost / pricePerLitre;
+      updateData.litresRefueled = pricePerLitre > 0 ? (existingRecord.fuelCost / pricePerLitre) : 0;
     }
 
     if (odometer !== undefined) updateData.odometer = odometer;

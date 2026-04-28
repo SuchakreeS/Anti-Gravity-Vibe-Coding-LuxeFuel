@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import api from '../utils/api';
-import Swal from 'sweetalert2';
+import { cyberToast } from '../components/CyberToast';
 
 export const useVehicleStore = create((set, get) => ({
   cars: [],
@@ -11,16 +11,17 @@ export const useVehicleStore = create((set, get) => ({
     set({ loading: true });
     try {
       const res = await api.get('/cars');
-      set({ cars: res.data });
+      const cars = Array.isArray(res.data) ? res.data : [];
+      set({ cars });
       // Restore selection if exists
       const currentSelected = get().selectedCar;
       if (currentSelected) {
-        const updated = res.data.find(c => c.id === currentSelected.id);
+        const updated = cars.find(c => c.id === currentSelected.id);
         if (updated) set({ selectedCar: updated });
-      } else if (res.data.length > 0) {
-        set({ selectedCar: res.data[0] });
+      } else if (cars.length > 0) {
+        set({ selectedCar: cars[0] });
       }
-      return res.data;
+      return cars;
     } catch (err) {
       console.error('Failed to fetch cars', err);
       return [];
@@ -50,7 +51,12 @@ export const useVehicleStore = create((set, get) => ({
 
     try {
       const res = await api.put(`/cars/${carId}`, {
-        ...car,
+        name: car.name,
+        brand: car.brand,
+        model: car.model,
+        licensePlate: car.licensePlate,
+        otherSpecs: car.otherSpecs,
+        isPersonal: car.isPersonal,
         maintenanceData: JSON.stringify(maintenance)
       });
       
@@ -62,7 +68,7 @@ export const useVehicleStore = create((set, get) => ({
       
       return res.data;
     } catch (err) {
-      Swal.fire('Error', 'Failed to update maintenance records', 'error');
+      cyberToast.error('Failed to update maintenance records');
       throw err;
     }
   },

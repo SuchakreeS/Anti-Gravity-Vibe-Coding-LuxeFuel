@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react';
 import api from '../utils/api';
-import Swal from 'sweetalert2';
+import { cyberToast } from '../components/CyberToast';
 
 export function useOrganization() {
   const [members, setMembers] = useState([]);
@@ -38,10 +38,10 @@ export function useOrganization() {
     try {
       const res = await api.post('/organization/members', memberData);
       setMembers(prev => [...prev, res.data]);
-      Swal.fire('Success', 'Member added successfully!', 'success');
+      cyberToast.success('Operator Added // Access Granted');
       return res.data;
     } catch (err) {
-      Swal.fire('Error', err.response?.data?.message || 'Failed to add member', 'error');
+      cyberToast.error(err.response?.data?.message || 'Failed to add member');
       throw err;
     }
   }, []);
@@ -50,9 +50,9 @@ export function useOrganization() {
     try {
       await api.delete(`/organization/members/${memberId}`);
       setMembers(prev => prev.filter(m => m.id !== memberId));
-      Swal.fire('Removed', 'Member removed successfully.', 'success');
+      cyberToast.warning('Operator Removed // Access Revoked');
     } catch (err) {
-      Swal.fire('Error', err.response?.data?.message || 'Failed to remove member', 'error');
+      cyberToast.error(err.response?.data?.message || 'Failed to remove member');
       throw err;
     }
   }, []);

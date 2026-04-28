@@ -1,20 +1,23 @@
 import { useState, useCallback, useEffect, useMemo } from 'react';
 import api from '../utils/api';
 import { format } from 'date-fns';
-import Swal from 'sweetalert2';
 import { useCurrencyStore } from '../store/useCurrencyStore';
+
+import { useCyberToast } from '../components/CyberToast';
 
 export function useFuelRecords(selectedCarId) {
   const [records, setRecords] = useState([]);
   const [loading, setLoading] = useState(false);
-  const convert = useCurrencyStore((state) => state.convert);
+  const { convert, currency } = useCurrencyStore();
+  const cyberToast = useCyberToast();
 
   const fetchRecords = useCallback(async (carId) => {
     if (!carId) return;
     setLoading(true);
     try {
       const res = await api.get(`/cars/${carId}/records`);
-      const formatted = res.data.map(r => ({
+      const rawData = Array.isArray(res.data) ? res.data : [];
+      const formatted = rawData.map(r => ({
         ...r,
         displayDate: format(new Date(r.date), "dd MMM ''yy"),
         displayTime: format(new Date(r.date), 'HH:mm'),
@@ -31,35 +34,35 @@ export function useFuelRecords(selectedCarId) {
   const addRecord = useCallback(async (carId, payload) => {
     try {
       await api.post(`/cars/${carId}/records`, payload);
-      Swal.fire('Success', 'Fuel record added!', 'success');
+      cyberToast.success('Fuel Logged // Data Synchronized');
       fetchRecords(carId);
     } catch (err) {
-      Swal.fire('Error', err.response?.data?.message || 'Failed to add record', 'error');
+      cyberToast.error(err.response?.data?.message || 'Logging failed');
       throw err;
     }
-  }, [fetchRecords]);
+  }, [fetchRecords, cyberToast]);
 
   const updateRecord = useCallback(async (carId, recordId, payload) => {
     try {
       await api.put(`/cars/${carId}/records/${recordId}`, payload);
-      Swal.fire('Success', 'Record updated!', 'success');
+      cyberToast.success('Record Updated // Calibration Complete');
       fetchRecords(carId);
     } catch (err) {
-      Swal.fire('Error', err.response?.data?.message || 'Update failed', 'error');
+      cyberToast.error(err.response?.data?.message || 'Update failed');
       throw err;
     }
-  }, [fetchRecords]);
+  }, [fetchRecords, cyberToast]);
 
   const deleteRecord = useCallback(async (carId, recordId) => {
     try {
       await api.delete(`/cars/${carId}/records/${recordId}`);
-      Swal.fire('Deleted!', 'Record removed successfully.', 'success');
+      cyberToast.warning('Record Purged // Memory Cleared');
       fetchRecords(carId);
     } catch (err) {
-      Swal.fire('Error', 'Deletion failed', 'error');
+      cyberToast.error('Declassification failed');
       throw err;
     }
-  }, [fetchRecords]);
+  }, [fetchRecords, cyberToast]);
 
   useEffect(() => {
     if (selectedCarId) {
@@ -75,7 +78,7 @@ export function useFuelRecords(selectedCarId) {
       convertedFuelCost: convert(r.fuelCost),
       convertedPricePerLitre: convert(r.pricePerLitre),
     }));
-  }, [records, convert]);
+  }, [records, convert, currency]);
 
   const stats = useMemo(() => {
     if (records.length === 0) return null;
@@ -101,13 +104,21 @@ export function useFuelRecords(selectedCarId) {
       }
     }
 
+    const totalSpentTHB = records.reduce((sum, r) => sum + (r.fuelCost || 0), 0);
+    const totalDistance = records.reduce((sum, r) => sum + (r.distanceTraveled || 0), 0);
+    
+    const totalSpent = convert(totalSpentTHB);
+    const avgCostPerKm = totalDistance > 0 ? totalSpent / totalDistance : null;
+
     return {
       latest,
       avgConsumption,
       fullTankCount: fullTankRecords.length,
-      comparison
+      comparison,
+      totalSpent,
+      avgCostPerKm
     };
-  }, [records]);
+  }, [records, convert, currency]);
 
   return {
     records,

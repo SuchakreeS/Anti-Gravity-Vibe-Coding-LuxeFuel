@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import api from '../utils/api';
-import Swal from 'sweetalert2';
+import { cyberToast } from '../components/CyberToast';
 
 export function useCars(user) {
   const [cars, setCars] = useState([]);
@@ -13,8 +13,9 @@ export function useCars(user) {
   const fetchCars = useCallback(async () => {
     try {
       const res = await api.get('/cars');
-      setCars(res.data);
-      return res.data;
+      const carsArray = Array.isArray(res.data) ? res.data : [];
+      setCars(carsArray);
+      return carsArray;
     } catch (err) {
       console.error('Failed to fetch cars', err);
       return [];
@@ -54,10 +55,10 @@ export function useCars(user) {
       const res = await api.post('/cars', carData);
       setCars(prev => [res.data, ...prev]);
       setSelectedCar(res.data);
-      Swal.fire('Success', 'Car added!', 'success');
+      cyberToast.success('Vehicle Synced // Added to Fleet');
       return res.data;
     } catch (err) {
-      Swal.fire('Error', err.response?.data?.message || 'Failed to add car', 'error');
+      cyberToast.error(err.response?.data?.message || 'Vehicle sync failed');
       throw err;
     }
   }, []);
@@ -69,8 +70,9 @@ export function useCars(user) {
   }, [user, fetchCars]);
 
   // Separate org cars from personal cars
-  const orgCars = cars.filter(c => !c.isPersonal);
-  const personalCars = cars.filter(c => c.isPersonal);
+  const safeCars = Array.isArray(cars) ? cars : [];
+  const orgCars = safeCars.filter(c => !c.isPersonal);
+  const personalCars = safeCars.filter(c => c.isPersonal);
 
   return {
     cars,

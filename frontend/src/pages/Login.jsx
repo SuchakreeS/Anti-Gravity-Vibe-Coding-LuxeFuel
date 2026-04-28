@@ -10,132 +10,121 @@ import api from '../utils/api';
 const loginSchema = z.object({
   email: z.string().email('Invalid email address'),
   password: z.string().min(1, 'Password is required'),
-  rememberMe: z.boolean().default(false)
 });
 
+import { useCyberToast } from '../components/CyberToast';
+
 function Login() {
+  const cyberToast = useCyberToast();
   const login = useAuthStore((state) => state.login);
   const navigate = useNavigate();
   const { register, handleSubmit, formState: { errors } } = useForm({
     resolver: zodResolver(loginSchema),
-    defaultValues: { rememberMe: false }
   });
 
   const onSubmit = async (data) => {
     try {
       const res = await api.post('/auth/login', { email: data.email, password: data.password });
-      login(res.data.user, res.data.token, data.rememberMe);
-      navigate('/');
+      login(res.data.user, res.data.token, true);
+      cyberToast.success('Session Initialized');
+      navigate('/dashboard');
     } catch (err) {
-      alert(err.response?.data?.message || 'Login failed');
+      cyberToast.error(err.response?.data?.message || 'Authorization failed');
     }
   };
 
   return (
-    <div className="min-h-screen flex bg-[#0f0f0f] overflow-hidden">
-      {/* Left Content Side */}
-      <div className="flex-1 flex items-center justify-center p-8 lg:p-16 z-10 relative">
-        <motion.div
-          initial={{ opacity: 0, x: -20 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ duration: 0.8 }}
-          className="w-full max-w-md"
-        >
-          <div className="mb-10 text-center lg:text-left">
-            <h1 className="text-6xl font-black tracking-tight text-white mb-2">
-              Luxe<span className="text-primary">Fuel</span>
+    <div className="min-h-screen flex bg-asphalt font-['Rajdhani']">
+      {/* Left Side: Brand & Visuals */}
+      <div className="hidden lg:flex flex-1 relative bg-carbon overflow-hidden">
+        {/* Carbon Fiber Pattern */}
+        <div 
+          className="absolute inset-0 opacity-10"
+          style={{
+            backgroundColor: '#0F111A',
+            backgroundImage: `linear-gradient(45deg, #050508 25%, transparent 25%), linear-gradient(-45deg, #050508 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #050508 75%), linear-gradient(-45deg, transparent 75%, #050508 75%)`,
+            backgroundSize: '20px 20px',
+            backgroundPosition: '0 0, 0 10px, 10px 10px, 10px 0'
+          }}
+        />
+        
+        <div className="relative z-10 flex flex-col items-center justify-center w-full p-12">
+          <motion.div
+            initial={{ scale: 0.8, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            transition={{ duration: 1, ease: "easeOut" }}
+            className="text-center"
+          >
+            <h1 className="text-8xl font-black italic tracking-tighter uppercase text-white mb-2">
+              Luxe<span className="text-neon-violet drop-shadow-[0_0_15px_rgba(168,85,247,0.5)]">Fuel</span>
             </h1>
-            <p className="text-neutral-content/70 text-lg font-light">
-              Track consumption & expenses. Elevate your driving experience.
+            <div className="h-1 w-24 bg-neon-violet mx-auto mb-6 shadow-neon" />
+            <p className="text-xl text-text-secondary uppercase tracking-[0.3em] font-bold">
+              Precision Tracking // Pure Performance
             </p>
-          </div>
+          </motion.div>
+        </div>
 
-          <div className="card w-full shadow-2xl bg-base-100/10 backdrop-blur-xl border border-white/10">
-            <form className="card-body" onSubmit={handleSubmit(onSubmit)}>
-              <div className="form-control">
-                <label className="label">
-                  <span className="label-text font-medium opacity-70">Email</span>
-                </label>
-                <input
-                  type="email"
-                  placeholder="name@example.com"
-                  className="input input-bordered focus:input-primary bg-white/5 border-white/10 transition-all duration-300"
-                  {...register('email')}
-                />
-                {errors.email && (
-                  <span className="text-error text-xs mt-1">{errors.email.message}</span>
-                )}
-              </div>
-              <div className="form-control mt-2">
-                <label className="label">
-                  <span className="label-text font-medium opacity-70">Password</span>
-                </label>
-                <input
-                  type="password"
-                  placeholder="••••••••"
-                  className="input input-bordered focus:input-primary bg-white/5 border-white/10 transition-all duration-300"
-                  {...register('password')}
-                />
-                {errors.password && (
-                  <span className="text-error text-xs mt-1">{errors.password.message}</span>
-                )}
-              </div>
-              <div className="form-control">
-                <label className="label cursor-pointer justify-start gap-3 mt-2">
-                  <input
-                    type="checkbox"
-                    className="checkbox checkbox-primary checkbox-sm border-white/20"
-                    {...register('rememberMe')}
-                  />
-                  <span className="label-text text-sm opacity-70">Keep me signed in</span>
-                </label>
-              </div>
-              <div className="form-control mt-6">
-                <button className="btn btn-primary btn-block text-lg shadow-lg hover:shadow-primary/20 transition-all duration-500">
-                  Sign In
-                </button>
-              </div>
-              <div className="divider text-xs opacity-30 uppercase tracking-widest">OR</div>
-              <p className="text-center text-sm opacity-70">
-                Don't have an account?{' '}
-                <Link to="/register" className="text-primary font-bold hover:underline transition-all">
-                  Register Now
-                </Link>
-              </p>
-            </form>
-          </div>
-        </motion.div>
+        {/* Industrial detailing */}
+        <div className="absolute bottom-0 left-0 w-full h-1/3 bg-gradient-to-t from-asphalt to-transparent opacity-50" />
       </div>
 
-      {/* Right Video Side (Desktop Only) */}
-      <div className="hidden lg:flex flex-1 relative bg-black">
-        <video
-          autoPlay
-          loop
-          muted
-          playsInline
-          className="absolute top-0 left-0 w-full h-full object-cover grayscale-[0.2] brightness-[0.7]"
+      {/* Right Side: Form */}
+      <div className="flex-1 flex items-center justify-center p-6 md:p-12">
+        <motion.div
+          initial={{ x: 50, opacity: 0 }}
+          animate={{ x: 0, opacity: 1 }}
+          transition={{ duration: 0.6, ease: "easeOut" }}
+          className="w-full max-w-md"
         >
-          <source
-            src="https://assets.mixkit.co/videos/preview/mixkit-tachometer-of-a-car-speeding-up-4403-large.mp4"
-            type="video/mp4"
-          />
-        </video>
-        {/* Gradient Overlay for Fade and Luxury feel */}
-        <div 
-          className="absolute inset-0 z-20"
-          style={{ 
-            background: 'linear-gradient(to right, rgba(15, 15, 15, 0) 0%, rgba(15, 15, 15, 1) 100%)' 
-          }}
-        ></div>
-        <div 
-          className="absolute inset-0 z-10"
-          style={{ 
-            background: 'linear-gradient(to left, rgba(15, 15, 15, 1) 0%, rgba(15, 15, 15, 0.4) 100%)' 
-          }}
-        ></div>
+          <div className="mb-10">
+            <h2 className="text-4xl font-black italic uppercase text-white mb-2 tracking-tighter">Welcome Back</h2>
+            <p className="text-text-secondary font-medium uppercase tracking-widest text-sm">Secure authorization required</p>
+          </div>
+
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+            <div className="space-y-1">
+              <label className="text-[10px] font-black uppercase tracking-widest text-text-secondary ml-1">Access Token (Email)</label>
+              <input
+                {...register('email')}
+                type="email"
+                placeholder="OPERATOR@LUXEFUEL.COM"
+                className="w-full bg-carbon border border-industrial-border rounded-sm px-4 py-3 text-white placeholder:text-slate-700 focus:outline-none focus:border-neon-violet focus:shadow-[0_0_15px_rgba(168,85,247,0.2)] transition-all duration-300 uppercase font-bold"
+              />
+              {errors.email && <span className="text-turbo-orange text-[10px] font-bold uppercase tracking-widest ml-1">{errors.email.message}</span>}
+            </div>
+
+            <div className="space-y-1">
+              <label className="text-[10px] font-black uppercase tracking-widest text-text-secondary ml-1">Security Key (Password)</label>
+              <input
+                {...register('password')}
+                type="password"
+                placeholder="••••••••"
+                className="w-full bg-carbon border border-industrial-border rounded-sm px-4 py-3 text-white placeholder:text-slate-700 focus:outline-none focus:border-neon-violet focus:shadow-[0_0_15px_rgba(168,85,247,0.2)] transition-all duration-300 font-bold"
+              />
+              {errors.password && <span className="text-turbo-orange text-[10px] font-bold uppercase tracking-widest ml-1">{errors.password.message}</span>}
+            </div>
+
+            <button
+              type="submit"
+              className="w-full bg-neon-violet hover:bg-white hover:text-asphalt text-white py-4 rounded-sm font-black text-xl uppercase tracking-tighter shadow-neon transition-all duration-300 mt-4"
+            >
+              Initialize Session
+            </button>
+          </form>
+
+          <div className="mt-8 pt-8 border-t border-industrial-border text-center">
+            <p className="text-text-secondary text-sm font-medium uppercase tracking-widest">
+              New Operator?{' '}
+              <Link to="/register" className="text-neon-violet hover:text-white transition-colors font-black italic">
+                Request Registration //
+              </Link>
+            </p>
+          </div>
+        </motion.div>
       </div>
     </div>
   );
 }
+
 export default Login;

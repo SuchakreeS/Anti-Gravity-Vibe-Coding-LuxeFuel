@@ -5,6 +5,7 @@ import { useCurrencyStore } from '../store/useCurrencyStore';
 import { useCars } from '../hooks/useCars';
 import { useFuelRecords } from '../hooks/useFuelRecords';
 import Layout from '../components/Layout';
+import { cyberToast } from '../components/CyberToast';
 
 function MileageLog() {
   const { user } = useAuthStore();
@@ -109,7 +110,7 @@ function MileageLog() {
               <button 
                 disabled={!canExportPDF()}
                 className={`btn btn-sm ${canExportPDF() ? 'btn-primary' : 'btn-ghost opacity-50 cursor-not-allowed'}`}
-                onClick={() => alert('Exporting PDF...')}
+                onClick={() => cyberToast.info('Exporting PDF...')}
               >
                 {canExportPDF() ? '📄 Export PDF' : '🔒 Export PDF (PRO)'}
               </button>

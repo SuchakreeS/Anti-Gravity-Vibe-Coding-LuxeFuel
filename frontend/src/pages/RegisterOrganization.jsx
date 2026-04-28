@@ -4,8 +4,8 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import api from '../utils/api';
 import { Link, useNavigate } from 'react-router-dom';
-import Swal from 'sweetalert2';
 import { motion } from 'framer-motion';
+import { useCyberToast } from '../components/CyberToast';
 
 const registerOrgSchema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters'),
@@ -16,6 +16,7 @@ const registerOrgSchema = z.object({
 
 function RegisterOrganization() {
   const navigate = useNavigate();
+  const cyberToast = useCyberToast();
   const { register, handleSubmit, formState: { errors } } = useForm({
     resolver: zodResolver(registerOrgSchema)
   });
@@ -23,161 +24,133 @@ function RegisterOrganization() {
   const onSubmit = async (data) => {
     try {
       await api.post('/auth/register-org', data);
-      Swal.fire({
-        icon: 'success',
-        title: 'Organization Created!',
-        text: 'Your organization has been registered. Please log in.',
-      });
+      cyberToast.success('Organization Created // Admin Credentials Initialized');
       navigate('/login');
     } catch (err) {
-      Swal.fire({
-        icon: 'error',
-        title: 'Registration Failed',
-        text: err.response?.data?.message || 'Something went wrong',
-      });
+      cyberToast.error(err.response?.data?.message || 'Registration failure');
     }
   };
 
   return (
-    <div className="min-h-screen flex bg-[#0f0f0f] overflow-hidden">
-      {/* Left Content Side */}
-      <div className="flex-1 flex items-center justify-center p-8 lg:p-16 z-10 relative">
-        <motion.div
-          initial={{ opacity: 0, x: -20 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ duration: 0.8 }}
-          className="w-full max-w-md"
-        >
-          <div className="mb-10 text-center lg:text-left">
-            <h1 className="text-6xl font-black tracking-tight text-white mb-2">
-              Luxe<span className="text-primary">Fuel</span>
+    <div className="min-h-screen flex bg-asphalt font-['Rajdhani']">
+      {/* Left Side: Brand & Visuals */}
+      <div className="hidden lg:flex flex-1 relative bg-carbon overflow-hidden">
+        {/* Carbon Fiber Pattern */}
+        <div 
+          className="absolute inset-0 opacity-10"
+          style={{
+            backgroundColor: '#0F111A',
+            backgroundImage: `linear-gradient(45deg, #050508 25%, transparent 25%), linear-gradient(-45deg, #050508 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #050508 75%), linear-gradient(-45deg, transparent 75%, #050508 75%)`,
+            backgroundSize: '20px 20px',
+            backgroundPosition: '0 0, 0 10px, 10px 10px, 10px 0'
+          }}
+        />
+        
+        <div className="relative z-10 flex flex-col items-center justify-center w-full p-12">
+          <motion.div
+            initial={{ scale: 0.8, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            transition={{ duration: 1, ease: "easeOut" }}
+            className="text-center"
+          >
+            <h1 className="text-8xl font-black italic tracking-tighter uppercase text-white mb-2">
+              Luxe<span className="text-neon-violet drop-shadow-[0_0_15px_rgba(168,85,247,0.5)]">Fuel</span>
             </h1>
-            <p className="text-neutral-content/70 text-lg font-light">
-              Manage your fleet. Track with precision.
+            <div className="h-1 w-24 bg-neon-violet mx-auto mb-6 shadow-neon" />
+            <p className="text-xl text-text-secondary uppercase tracking-[0.3em] font-bold">
+              Fleet Management // Professional Tier
             </p>
-          </div>
-
-          <div className="card w-full shadow-2xl bg-base-100/10 backdrop-blur-xl border border-white/10">
-            <form className="card-body" onSubmit={handleSubmit(onSubmit)}>
-              <h2 className="text-2xl font-bold mb-2">Register Organization</h2>
-              <p className="text-sm opacity-50 mb-4">Create your organization and become its admin.</p>
-
-              {/* Organization Name */}
-              <div className="form-control">
-                <label className="label">
-                  <span className="label-text font-medium opacity-70">
-                    <span className="inline-flex items-center gap-1.5">
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" /></svg>
-                      Organization Name
-                    </span>
-                  </span>
-                </label>
-                <input
-                  type="text"
-                  placeholder="Acme Corp"
-                  className="input input-bordered focus:input-primary bg-white/5 border-white/10 transition-all duration-300"
-                  {...register('organizationName')}
-                />
-                {errors.organizationName && (
-                  <span className="text-error text-xs mt-1">{errors.organizationName.message}</span>
-                )}
-              </div>
-
-              <div className="divider text-xs opacity-20 my-1">ADMIN ACCOUNT</div>
-
-              <div className="form-control">
-                <label className="label">
-                  <span className="label-text font-medium opacity-70">Your Name</span>
-                </label>
-                <input
-                  type="text"
-                  placeholder="John Doe"
-                  className="input input-bordered focus:input-primary bg-white/5 border-white/10 transition-all duration-300"
-                  {...register('name')}
-                />
-                {errors.name && (
-                  <span className="text-error text-xs mt-1">{errors.name.message}</span>
-                )}
-              </div>
-              <div className="form-control mt-2">
-                <label className="label">
-                  <span className="label-text font-medium opacity-70">Email</span>
-                </label>
-                <input
-                  type="email"
-                  placeholder="admin@acme.com"
-                  className="input input-bordered focus:input-primary bg-white/5 border-white/10 transition-all duration-300"
-                  {...register('email')}
-                />
-                {errors.email && (
-                  <span className="text-error text-xs mt-1">{errors.email.message}</span>
-                )}
-              </div>
-              <div className="form-control mt-2">
-                <label className="label">
-                  <span className="label-text font-medium opacity-70">Password</span>
-                </label>
-                <input
-                  type="password"
-                  placeholder="••••••••"
-                  className="input input-bordered focus:input-primary bg-white/5 border-white/10 transition-all duration-300"
-                  {...register('password')}
-                />
-                {errors.password && (
-                  <span className="text-error text-xs mt-1">{errors.password.message}</span>
-                )}
-              </div>
-              <div className="form-control mt-6">
-                <button className="btn btn-primary btn-block text-lg shadow-lg hover:shadow-primary/20 transition-all duration-500">
-                  Create Organization
-                </button>
-              </div>
-              <div className="divider text-xs opacity-30 uppercase tracking-widest">OR</div>
-              <p className="text-center text-sm opacity-70">
-                Register as individual?{' '}
-                <Link to="/register" className="text-primary font-bold hover:underline transition-all">
-                  Personal Account
-                </Link>
-              </p>
-              <p className="text-center text-sm opacity-70 mt-1">
-                Already have an account?{' '}
-                <Link to="/login" className="text-primary font-bold hover:underline transition-all">
-                  Login here
-                </Link>
-              </p>
-            </form>
-          </div>
-        </motion.div>
+          </motion.div>
+        </div>
       </div>
 
-      {/* Right Video Side (Desktop Only) */}
-      <div className="hidden lg:flex flex-1 relative bg-black">
-        <video
-          autoPlay
-          loop
-          muted
-          playsInline
-          className="absolute top-0 left-0 w-full h-full object-cover grayscale-[0.2] brightness-[0.7]"
+      {/* Right Side: Form */}
+      <div className="flex-1 flex items-center justify-center p-6 md:p-12">
+        <motion.div
+          initial={{ x: 50, opacity: 0 }}
+          animate={{ x: 0, opacity: 1 }}
+          transition={{ duration: 0.6, ease: "easeOut" }}
+          className="w-full max-w-md"
         >
-          <source
-            src="https://assets.mixkit.co/videos/preview/mixkit-tachometer-of-a-car-speeding-up-4403-large.mp4"
-            type="video/mp4"
-          />
-        </video>
-        <div 
-          className="absolute inset-0 z-20"
-          style={{ 
-            background: 'linear-gradient(to right, rgba(15, 15, 15, 0) 0%, rgba(15, 15, 15, 1) 100%)' 
-          }}
-        ></div>
-        <div 
-          className="absolute inset-0 z-10"
-          style={{ 
-            background: 'linear-gradient(to left, rgba(15, 15, 15, 1) 0%, rgba(15, 15, 15, 0.4) 100%)' 
-          }}
-        ></div>
+          <div className="mb-6 text-right lg:text-left">
+            <h2 className="text-4xl font-black italic uppercase text-white mb-2 tracking-tighter">Organization Setup</h2>
+            <p className="text-text-secondary font-medium uppercase tracking-widest text-sm">Register your fleet command center</p>
+          </div>
+
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+            {/* Organization Name */}
+            <div className="space-y-1">
+              <label className="text-[10px] font-black uppercase tracking-widest text-text-secondary ml-1">Fleet / Organization Name</label>
+              <input
+                {...register('organizationName')}
+                type="text"
+                placeholder="ACME CORP FLEET"
+                className="w-full bg-carbon border border-industrial-border rounded-sm px-4 py-3 text-white placeholder:text-slate-700 focus:outline-none focus:border-neon-violet focus:shadow-[0_0_15px_rgba(168,85,247,0.2)] transition-all duration-300 uppercase font-bold"
+              />
+              {errors.organizationName && <span className="text-turbo-orange text-[10px] font-bold uppercase tracking-widest ml-1">{errors.organizationName.message}</span>}
+            </div>
+
+            <div className="divider text-text-secondary/20 text-[10px] font-black tracking-[0.5em] my-1">ADMINISTRATOR</div>
+
+            <div className="space-y-1">
+              <label className="text-[10px] font-black uppercase tracking-widest text-text-secondary ml-1">Admin Name</label>
+              <input
+                {...register('name')}
+                type="text"
+                placeholder="JOHN DOE"
+                className="w-full bg-carbon border border-industrial-border rounded-sm px-4 py-3 text-white placeholder:text-slate-700 focus:outline-none focus:border-neon-violet focus:shadow-[0_0_15px_rgba(168,85,247,0.2)] transition-all duration-300 uppercase font-bold"
+              />
+              {errors.name && <span className="text-turbo-orange text-[10px] font-bold uppercase tracking-widest ml-1">{errors.name.message}</span>}
+            </div>
+
+            <div className="space-y-1">
+              <label className="text-[10px] font-black uppercase tracking-widest text-text-secondary ml-1">Admin Access Token (Email)</label>
+              <input
+                {...register('email')}
+                type="email"
+                placeholder="ADMIN@ACME.COM"
+                className="w-full bg-carbon border border-industrial-border rounded-sm px-4 py-3 text-white placeholder:text-slate-700 focus:outline-none focus:border-neon-violet focus:shadow-[0_0_15px_rgba(168,85,247,0.2)] transition-all duration-300 uppercase font-bold"
+              />
+              {errors.email && <span className="text-turbo-orange text-[10px] font-bold uppercase tracking-widest ml-1">{errors.email.message}</span>}
+            </div>
+
+            <div className="space-y-1">
+              <label className="text-[10px] font-black uppercase tracking-widest text-text-secondary ml-1">Admin Security Key (Password)</label>
+              <input
+                {...register('password')}
+                type="password"
+                placeholder="••••••••"
+                className="w-full bg-carbon border border-industrial-border rounded-sm px-4 py-3 text-white placeholder:text-slate-700 focus:outline-none focus:border-neon-violet focus:shadow-[0_0_15px_rgba(168,85,247,0.2)] transition-all duration-300 font-bold"
+              />
+              {errors.password && <span className="text-turbo-orange text-[10px] font-bold uppercase tracking-widest ml-1">{errors.password.message}</span>}
+            </div>
+
+            <button
+              type="submit"
+              className="w-full bg-turbo-orange hover:bg-white hover:text-asphalt text-white py-4 rounded-sm font-black text-xl uppercase tracking-tighter shadow-[0_0_15px_rgba(249,115,22,0.4)] transition-all duration-300 mt-4"
+            >
+              Deploy Fleet Command //
+            </button>
+          </form>
+
+          <div className="mt-8 pt-8 border-t border-industrial-border text-center flex flex-col gap-2">
+            <p className="text-text-secondary text-sm font-medium uppercase tracking-widest">
+              Back to Individual?{' '}
+              <Link to="/register" className="text-neon-violet hover:text-white transition-colors font-black italic">
+                Personal Registration
+              </Link>
+            </p>
+            <p className="text-text-secondary text-sm font-medium uppercase tracking-widest">
+              Existing Admin?{' '}
+              <Link to="/login" className="text-neon-violet hover:text-white transition-colors font-black italic">
+                Sign In
+              </Link>
+            </p>
+          </div>
+        </motion.div>
       </div>
     </div>
   );
 }
+
 export default RegisterOrganization;
