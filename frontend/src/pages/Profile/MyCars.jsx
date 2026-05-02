@@ -72,6 +72,23 @@ function MyCars({
                 </div>
               </div>
 
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div className="form-control">
+                  <label className="label py-1"><span className="label-text font-medium opacity-70">Gas Tank Size (L)</span></label>
+                  <input 
+                    type="number" 
+                    placeholder="e.g. 50" 
+                    className="input input-sm input-bordered" 
+                    value={newCarForm.tankSize} 
+                    onChange={e => setNewCarForm({ ...newCarForm, tankSize: parseFloat(e.target.value) || 0 })} 
+                  />
+                </div>
+                <div className="form-control">
+                  <label className="label py-1"><span className="label-text font-medium opacity-70">Other Specs (Optional)</span></label>
+                  <input placeholder="2024 Hybrid" className="input input-sm input-bordered" value={newCarForm.otherSpecs} onChange={e => setNewCarForm({ ...newCarForm, otherSpecs: e.target.value })} />
+                </div>
+              </div>
+
               <div className="form-control">
                 <div className="flex justify-between items-center mb-1">
                   <span className="text-sm font-medium opacity-70">Brand & Model</span>
@@ -116,11 +133,6 @@ function MyCars({
                 )}
               </div>
 
-              <div className="form-control">
-                <label className="label py-1"><span className="label-text font-medium opacity-70">Other Specs (Optional)</span></label>
-                <input placeholder="2024 Hybrid" className="input input-sm input-bordered" value={newCarForm.otherSpecs} onChange={e => setNewCarForm({ ...newCarForm, otherSpecs: e.target.value })} />
-              </div>
-
               <div className="flex gap-2 mt-2">
                 <button type="submit" className="btn btn-accent btn-sm">Save Car</button>
                 <button type="button" className="btn btn-ghost btn-sm" onClick={() => setAddingCar(false)}>Cancel</button>
@@ -139,12 +151,31 @@ function MyCars({
             <div key={car.id} className="p-4 bg-base-200 rounded-xl">
               {editingCar?.id === car.id ? (
                 <form onSubmit={handleUpdateCar} className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  <input required placeholder="Name" className="input input-sm input-bordered" value={carForm.name} onChange={e => setCarForm({ ...carForm, name: e.target.value })} />
-                  <input required placeholder="Brand" className="input input-sm input-bordered" value={carForm.brand} onChange={e => setCarForm({ ...carForm, brand: e.target.value })} />
-                  <input required placeholder="Model" className="input input-sm input-bordered" value={carForm.model} onChange={e => setCarForm({ ...carForm, model: e.target.value })} />
-                  <input placeholder="License Plate" className="input input-sm input-bordered" value={carForm.licensePlate} onChange={e => setCarForm({ ...carForm, licensePlate: e.target.value })} />
-                  <input placeholder="Other Specs" className="input input-sm input-bordered" value={carForm.otherSpecs} onChange={e => setCarForm({ ...carForm, otherSpecs: e.target.value })} />
-                  <div className="md:col-span-2 flex gap-2">
+                  <div className="form-control">
+                    <label className="label py-1"><span className="label-text text-xs opacity-50">Name</span></label>
+                    <input required placeholder="Name" className="input input-sm input-bordered" value={carForm.name} onChange={e => setCarForm({ ...carForm, name: e.target.value })} />
+                  </div>
+                  <div className="form-control">
+                    <label className="label py-1"><span className="label-text text-xs opacity-50">Brand</span></label>
+                    <input required placeholder="Brand" className="input input-sm input-bordered" value={carForm.brand} onChange={e => setCarForm({ ...carForm, brand: e.target.value })} />
+                  </div>
+                  <div className="form-control">
+                    <label className="label py-1"><span className="label-text text-xs opacity-50">Model</span></label>
+                    <input required placeholder="Model" className="input input-sm input-bordered" value={carForm.model} onChange={e => setCarForm({ ...carForm, model: e.target.value })} />
+                  </div>
+                  <div className="form-control">
+                    <label className="label py-1"><span className="label-text text-xs opacity-50">License Plate</span></label>
+                    <input placeholder="License Plate" className="input input-sm input-bordered" value={carForm.licensePlate} onChange={e => setCarForm({ ...carForm, licensePlate: e.target.value })} />
+                  </div>
+                  <div className="form-control">
+                    <label className="label py-1"><span className="label-text text-xs opacity-50">Tank Size (L)</span></label>
+                    <input type="number" placeholder="Tank Size" className="input input-sm input-bordered" value={carForm.tankSize} onChange={e => setCarForm({ ...carForm, tankSize: parseFloat(e.target.value) || 0 })} />
+                  </div>
+                  <div className="form-control">
+                    <label className="label py-1"><span className="label-text text-xs opacity-50">Other Specs</span></label>
+                    <input placeholder="Other Specs" className="input input-sm input-bordered" value={carForm.otherSpecs} onChange={e => setCarForm({ ...carForm, otherSpecs: e.target.value })} />
+                  </div>
+                  <div className="md:col-span-2 flex gap-2 mt-2">
                     <button type="submit" className="btn btn-primary btn-sm">Save</button>
                     <button type="button" className="btn btn-ghost btn-sm" onClick={() => setEditingCar(null)}>Cancel</button>
                   </div>
@@ -159,8 +190,9 @@ function MyCars({
                       )}
                     </div>
                     <div className="opacity-70">{car.brand} {car.model}</div>
-                    <div className="flex gap-2 mt-1">
+                    <div className="flex flex-wrap gap-2 mt-1">
                       {car.licensePlate && <span className="badge badge-outline badge-sm">🔖 {car.licensePlate}</span>}
+                      {car.tankSize > 0 && <span className="badge badge-outline badge-sm">🛢️ {car.tankSize}L</span>}
                       {car.otherSpecs && <span className="text-sm opacity-50">{car.otherSpecs}</span>}
                     </div>
                   </div>

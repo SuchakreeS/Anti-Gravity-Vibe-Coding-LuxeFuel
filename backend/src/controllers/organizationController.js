@@ -68,48 +68,66 @@ export const createMember = async (req, res) => {
 };
 
 export const removeMember = async (req, res) => {
+// ... existing logic ...
+};
+
+export const getLeaderboard = async (req, res) => {
   try {
-    const memberId = parseInt(req.params.id);
-    
-    // Cannot remove yourself
-    if (memberId === req.user.id) {
-      return res.status(400).json({ message: 'Cannot remove yourself' });
-    }
+    const orgId = req.user.organizationId;
 
-    const member = await prisma.user.findFirst({
-      where: { id: memberId, organizationId: req.user.organizationId }
-    });
-
-    if (!member) {
-      return res.status(404).json({ message: 'Member not found' });
-    }
-
-    if (member.role === 'ADMIN') {
-      return res.status(400).json({ message: 'Cannot remove an admin' });
-    }
-
-    // Delete user's personal cars and their fuel records, then user
-    await prisma.$transaction(async (tx) => {
-      // Get user's personal cars
-      const personalCars = await tx.car.findMany({
-        where: { userId: memberId, isPersonal: true }
-      });
-
-      for (const car of personalCars) {
-        await tx.fuelRecord.deleteMany({ where: { carId: car.id } });
-        await tx.car.delete({ where: { id: car.id } });
+    // Get all users in org with their records
+    const users = await prisma.user.findMany({
+      where: { organizationId: orgId },
+      select: {
+        id: true,
+        name: true,
+        role: true,
+        fuelRecords: {
+          include: { car: { select: { name: true, brand: true } } },
+          orderBy: { date: 'desc' }
+        }
       }
-
-      // Remove submittedBy references from fuel records
-      await tx.fuelRecord.updateMany({
-        where: { submittedById: memberId },
-        data: { submittedById: null }
-      });
-
-      await tx.user.delete({ where: { id: memberId } });
     });
 
-    res.json({ message: 'Member removed successfully' });
+    const leaderboard = users.map(user => {
+      const records = user.fuelRecords;
+      const totalCO2 = records.reduce((sum, r) => sum + (r.carbonEmitted || 0), 0);
+      const totalDist = records.reduce((sum, r) => sum + (r.distanceTraveled || 0), 0);
+      
+      // Calculate Avg Eco-Pulse (Simplified for leaderboard)
+      const avgEfficiency = records.length > 0 
+        ? records.reduce((sum, r) => sum + (r.consumptionRate || 0), 0) / records.length
+        : 0;
+      
+      // E85/E20 adoption %
+      const greenLogs = records.filter(r => ['E20', 'E85'].includes(r.fuelType)).length;
+      const greenAdoption = records.length > 0 ? (greenLogs / records.length) * 100 : 0;
+
+      // Final Rank Score (0-100)
+      const pulseScore = Math.round(Math.min(100, (avgEfficiency * 4) + (greenAdoption * 0.3)));
+
+      return {
+        id: user.id,
+        name: user.name,
+        role: user.role,
+        pulseScore,
+        totalCO2: totalCO2 / 1000, // convert to tons
+        totalDist,
+        logCount: records.length,
+        greenAdoption: Math.round(greenAdoption),
+        recentLogs: records.slice(0, 5).map(r => ({
+          id: r.id,
+          date: r.date,
+          carName: r.car.name,
+          distance: r.distanceTraveled,
+          consumption: r.consumptionRate,
+          fuelType: r.fuelType,
+          co2: r.carbonEmitted
+        }))
+      };
+    }).sort((a, b) => b.pulseScore - a.pulseScore);
+
+    res.json(leaderboard);
   } catch (error) {
     res.status(500).json({ message: error.message });
   }

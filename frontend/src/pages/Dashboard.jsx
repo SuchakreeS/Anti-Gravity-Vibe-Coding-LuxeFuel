@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
+import { Plus } from 'lucide-react';
 import { useAuthStore } from '../store/useAuthStore';
 import { useCars } from '../hooks/useCars';
 import { useFuelRecords } from '../hooks/useFuelRecords';
@@ -8,26 +9,19 @@ import FuelEntryForm from './Dashboard/components/FuelEntryForm';
 import DashboardCharts from './Dashboard/components/DashboardCharts';
 import AddCarModal from './Dashboard/components/AddCarModal';
 import DashboardStats from './Dashboard/components/DashboardStats';
-import MaintenanceCard from '../components/dashboard/MaintenanceCard';
+import EcoPulseCard from '../components/dashboard/EcoPulseCard';
+import OperatorRankCard from '../components/dashboard/OperatorRankCard';
 import PriceTicker from '../components/dashboard/PriceTicker';
-import ServiceTimeline from '../components/dashboard/ServiceTimeline';
-import { estimateCurrentMileage } from '../utils/maintenance';
 import { useVehicleStore } from '../store/useVehicleStore';
-import MaintenanceForm from '../components/MaintenanceForm';
 import PremiumGuard from '../components/PremiumGuard';
 
 function Dashboard() {
   const { user } = useAuthStore();
-  const isAdmin = useAuthStore((state) => state.isAdmin);
-  const isOrgUser = useAuthStore((state) => state.isOrgUser);
-  const canAccessMaintenance = useAuthStore((state) => state.canAccessMaintenance);
-
   const { 
     cars, 
     selectedCar, 
     setSelectedCar, 
     fetchCars,
-    loading: loadingCars
   } = useVehicleStore();
 
   const { 
@@ -46,18 +40,16 @@ function Dashboard() {
     stats 
   } = useFuelRecords(selectedCar?.id);
 
-  const [showAddCarModal, setShowAddCarModal] = useState(false);
   const [showFuelModal, setShowFuelModal] = useState(false);
-  const [showMaintenanceModal, setShowMaintenanceModal] = useState(false);
+  const [showAddCarModal, setShowAddCarModal] = useState(false);
 
   useEffect(() => {
     if (cars.length === 0 && user) {
       fetchCars().then(data => {
         if (data && data.length === 0) setShowAddCarModal(true);
       });
-    } else if (cars.length > 0) {
-      if (!selectedCar) setSelectedCar(cars[0]);
-      setShowAddCarModal(false);
+    } else if (cars.length > 0 && !selectedCar) {
+      setSelectedCar(cars[0]);
     }
   }, [cars.length, user, selectedCar, setSelectedCar, fetchCars]);
 
@@ -75,13 +67,10 @@ function Dashboard() {
     }
   };
 
-  // Check if user can add cars
-  const canAddCar = isAdmin() || !isOrgUser(); // admin or individual, not regular org user
   const userRole = user?.role || 'individual';
 
   return (
     <Layout>
-      {/* Price Ticker — Full width across the top */}
       <div className="mb-6">
         <PriceTicker />
       </div>
@@ -89,57 +78,51 @@ function Dashboard() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Sidebar Controls */}
         <div className="flex flex-col gap-6">
+          {/* Operator Profile & Rank (Gated) */}
+          <PremiumGuard planRequired="PRO">
+            <OperatorRankCard 
+              user={user}
+              records={records}
+            />
+          </PremiumGuard>
+
           <motion.div initial={{ x: -20, opacity: 0 }} animate={{ x: 0, opacity: 1 }} className="card bg-carbon border border-industrial-border shadow-2xl">
             <div className="card-body">
-              <h2 className="card-title text-neon-violet border-b border-industrial-border pb-2 italic uppercase font-black tracking-widest">Select Car</h2>
+              <div className="flex justify-between items-center border-b border-industrial-border pb-2 mb-2">
+                <h2 className="card-title text-neon-violet italic uppercase font-black tracking-widest text-lg leading-none">Select Car</h2>
+                <button 
+                  onClick={() => setShowAddCarModal(true)}
+                  className="w-6 h-6 rounded-sm bg-neon-violet/10 border border-neon-violet/30 flex items-center justify-center text-neon-violet hover:bg-neon-violet hover:text-white transition-all shadow-neon hover:shadow-[0_0_15px_rgba(168,85,247,0.6)]"
+                  title="Add New Vehicle"
+                >
+                  <Plus className="w-4 h-4" />
+                </button>
+              </div>
               
-              {/* Org cars group */}
-              {cars.filter(c => !c.isPersonal).length > 0 && (
-                <div className="mb-2">
-                  <label className="text-xs font-bold uppercase opacity-40 mb-1 block">Organization Fleet</label>
-                  {cars.filter(c => !c.isPersonal).map(c => (
-                    <button
-                      key={c.id}
-                      className={`w-full text-left p-2 rounded-lg mb-1 transition-all text-sm ${
-                        selectedCar?.id === c.id 
-                          ? 'bg-jdm-purple/40 border border-neon-violet/40' 
-                          : 'bg-asphalt hover:bg-slate-800 border border-transparent'
-                      }`}
-                      onClick={() => setSelectedCar(c)}
-                    >
-                      <div className="font-medium">{c.name}</div>
-                      <div className="text-xs opacity-60">{c.brand} {c.model} {c.licensePlate ? `• ${c.licensePlate}` : ''}</div>
-                    </button>
-                  ))}
-                </div>
-              )}
+              <div className="space-y-2">
+                {cars.map(c => (
+                  <button
+                    key={c.id}
+                    className={`w-full text-left p-3 rounded-sm transition-all border ${
+                      selectedCar?.id === c.id 
+                        ? 'bg-secondary text-secondary-content border-secondary shadow-neon' 
+                        : 'bg-base-200 hover:bg-base-300 border-industrial-border text-text-primary'
+                    }`}
+                    onClick={() => setSelectedCar(c)}
+                  >
+                    <div className="font-bold uppercase italic text-sm">{c.name}</div>
+                    <div className={`text-[10px] uppercase font-black ${selectedCar?.id === c.id ? 'opacity-80' : 'opacity-40'}`}>
+                      {c.brand} {c.model} {c.licensePlate ? `• ${c.licensePlate}` : ''}
+                    </div>
+                  </button>
+                ))}
+              </div>
 
-              {/* Personal cars group */}
-              {cars.filter(c => c.isPersonal).length > 0 && (
-                <div>
-                  {cars.filter(c => !c.isPersonal).length > 0 && (
-                    <label className="text-xs font-bold uppercase opacity-40 mb-1 block">Personal Cars</label>
-                  )}
-                  {cars.filter(c => c.isPersonal).map(c => (
-                    <button
-                      key={c.id}
-                      className={`w-full text-left p-2 rounded-lg mb-1 transition-all text-sm ${
-                        selectedCar?.id === c.id 
-                          ? 'bg-jdm-purple/40 border border-neon-violet/40' 
-                          : 'bg-asphalt hover:bg-slate-800 border border-transparent'
-                      }`}
-                      onClick={() => setSelectedCar(c)}
-                    >
-                      <div className="font-medium">{c.name}</div>
-                      <div className="text-xs opacity-60">{c.brand} {c.model} {c.licensePlate ? `• ${c.licensePlate}` : ''}</div>
-                    </button>
-                  ))}
-                </div>
-              )}
-
-              {/* Fallback select for simple case */}
               {cars.length === 0 && (
-                <div className="text-center opacity-50 py-2 text-sm">No cars available</div>
+                <div className="text-center opacity-50 py-4 text-xs uppercase font-bold tracking-widest">
+                  No vehicles synced.<br/>
+                  <span className="text-neon-violet">Update fleet in profile.</span>
+                </div>
               )}
             </div>
           </motion.div>
@@ -158,40 +141,30 @@ function Dashboard() {
             </div>
           )}
 
-          {/* Dashboard Stats */}
           {selectedCar && stats && (
              <DashboardStats stats={stats} />
           )}
 
-          {/* Maintenance Card (Gated) */}
           {selectedCar && (
             <PremiumGuard planRequired="PRO">
-              <MaintenanceCard 
-                car={selectedCar} 
-                currentMileage={estimateCurrentMileage(records[records.length - 1])} 
-                onOpenService={() => setShowMaintenanceModal(true)}
+              <EcoPulseCard 
+                records={records}
+                car={selectedCar}
               />
             </PremiumGuard>
           )}
         </div>
 
-        {/* Main Content Area — Charts + Timeline */}
+        {/* Main Content Area — Charts */}
         {!selectedCar ? (
-          <div className="lg:col-span-2 flex h-[500px] items-center justify-center opacity-50 text-xl text-center">
-            Please select or add a car to view tracking data.
+          <div className="lg:col-span-2 flex h-[500px] items-center justify-center opacity-50 text-xl text-center font-['Rajdhani'] font-black uppercase italic tracking-tighter">
+            Select or initialize a vehicle to access telemetry.
           </div>
         ) : (
           <div className="lg:col-span-2 flex flex-col gap-6">
             <DashboardCharts 
               records={records} 
               convertedRecords={convertedRecords} 
-            />
-
-            {/* Service Timeline */}
-            <ServiceTimeline
-              records={records}
-              car={selectedCar}
-              onOpenMaintenance={() => setShowMaintenanceModal(true)}
             />
           </div>
         )}
@@ -215,14 +188,6 @@ function Dashboard() {
           onAddFuel={handleAddFuel} 
           stats={stats}
           onClose={() => setShowFuelModal(false)}
-        />
-      )}
-      {showMaintenanceModal && selectedCar && (
-        <MaintenanceForm 
-          isOpen={showMaintenanceModal}
-          onClose={() => setShowMaintenanceModal(false)}
-          carId={selectedCar.id}
-          currentOdometer={estimateCurrentMileage(records[records.length - 1])}
         />
       )}
     </Layout>

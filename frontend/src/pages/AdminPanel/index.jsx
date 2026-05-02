@@ -9,6 +9,7 @@ import { cyberToast } from '../../components/CyberToast';
 import MembersTab from './MembersTab';
 import FleetTab from './FleetTab';
 import AuditTrailTab from './AuditTrailTab';
+import CommandCenterTab from './CommandCenterTab';
 
 import PremiumGuard from '../../components/PremiumGuard';
 
@@ -69,8 +70,13 @@ function AdminPanel() {
   const handleAddCar = async (e) => {
     e.preventDefault();
     try {
-      await addCar({ ...carForm, isPersonal: false });
-      setCarForm({ name: '', brand: '', model: '', licensePlate: '', otherSpecs: '' });
+      const payload = { 
+        ...carForm, 
+        isPersonal: false,
+        tankSize: carForm.tankSize ? parseFloat(carForm.tankSize) : null
+      };
+      await addCar(payload);
+      setCarForm({ name: '', brand: '', model: '', licensePlate: '', tankSize: '', otherSpecs: '' });
       setShowCarForm(false);
     } catch {}
   };
@@ -99,6 +105,7 @@ function AdminPanel() {
   };
 
   const tabs = [
+    { id: 'command', label: '📡 Command Center' },
     { id: 'members', label: '👥 Members', count: members.length },
     { id: 'cars', label: '🚗 Fleet', count: orgCars.length },
     { id: 'audit', label: '📋 Audit Trail', count: auditPagination?.total || 0 }
@@ -127,12 +134,20 @@ function AdminPanel() {
               onClick={() => setActiveTab(tab.id)}
             >
               {tab.label}
-              <span className="badge badge-sm badge-ghost">{tab.count}</span>
+              {tab.count !== undefined && (
+                <span className="badge badge-sm badge-ghost">{tab.count}</span>
+              )}
             </button>
           ))}
         </div>
 
         {/* Tab Content */}
+        {activeTab === 'command' && (
+          <PremiumGuard planRequired="ENTERPRISE">
+            <CommandCenterTab />
+          </PremiumGuard>
+        )}
+
         {activeTab === 'members' && (
           <MembersTab 
             members={members}

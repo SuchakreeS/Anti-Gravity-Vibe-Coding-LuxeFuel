@@ -1,495 +1,166 @@
 import { PrismaClient } from '@prisma/client';
 import bcrypt from 'bcrypt';
 
-const prisma = new PrismaClient()
+const prisma = new PrismaClient();
 
 async function main() {
-  console.log('Start seeding ...')
+  const passwordHash = await bcrypt.hash('111111', 10);
 
-  // Clear existing data
-  await prisma.auditLog.deleteMany()
-  await prisma.fuelRecord.deleteMany()
-  await prisma.car.deleteMany()
-  await prisma.user.deleteMany()
-  await prisma.organization.deleteMany()
+  console.log('--- Initializing Seed with Fleet Data ---');
 
-  const hashedPassword = await bcrypt.hash('password123', 10)
+  // 1. Organizations
+  const freeOrg = await prisma.organization.upsert({
+    where: { name: 'Free Tier Fleet' },
+    update: {},
+    create: { name: 'Free Tier Fleet', plan: 'FREE' },
+  });
 
-  // User 1 — Alice, Toyota Camry, 12 records
-  const user1 = await prisma.user.create({
-    data: {
-      name: 'Alice Johnson',
-      email: 'alice@example.com',
-      password: hashedPassword,
-      cars: {
-        create: [
-          {
-            name: 'Alice Daily',
-            brand: 'Toyota',
-            model: 'Camry',
-            fuelRecords: {
-              create: [
-                {
-                  date: new Date('2024-01-01'),
-                  odometer: 200000,
-                  fuelCost: 2000,
-                  pricePerLitre: 40,
-                  litresRefueled: 50,
-                  distanceTraveled: 0,
-                  consumptionRate: null,
-                  isFullTank: true
-                },
-                {
-                  date: new Date('2024-01-10'),
-                  odometer: 200500,
-                  fuelCost: 2050,
-                  pricePerLitre: 41,
-                  litresRefueled: 50,
-                  distanceTraveled: 500,
-                  consumptionRate: 500 / 50,
-                  isFullTank: true
-                },
-                {
-                  date: new Date('2024-01-20'),
-                  odometer: 200980,
-                  fuelCost: 1920,
-                  pricePerLitre: 40,
-                  litresRefueled: 48,
-                  distanceTraveled: 480,
-                  consumptionRate: 480 / 48,
-                  isFullTank: true
-                },
-                {
-                  date: new Date('2024-01-28'),
-                  odometer: 201400,
-                  fuelCost: 1700,
-                  pricePerLitre: 39.5,
-                  litresRefueled: 1700 / 39.5,
-                  distanceTraveled: 420,
-                  consumptionRate: 420 / (1700 / 39.5),
-                  isFullTank: true
-                },
-                {
-                  date: new Date('2024-02-05'),
-                  odometer: 201900,
-                  fuelCost: 2000,
-                  pricePerLitre: 40,
-                  litresRefueled: 50,
-                  distanceTraveled: 500,
-                  consumptionRate: 500 / 50,
-                  isFullTank: true
-                },
-                {
-                  date: new Date('2024-02-14'),
-                  odometer: 202350,
-                  fuelCost: 1845,
-                  pricePerLitre: 41,
-                  litresRefueled: 45,
-                  distanceTraveled: 450,
-                  consumptionRate: 450 / 45,
-                  isFullTank: true
-                },
-                {
-                  date: new Date('2024-02-22'),
-                  odometer: 202800,
-                  fuelCost: 1800,
-                  pricePerLitre: 40,
-                  litresRefueled: 45,
-                  distanceTraveled: 450,
-                  consumptionRate: 450 / 45,
-                  isFullTank: true
-                },
-                {
-                  date: new Date('2024-03-02'),
-                  odometer: 203250,
-                  fuelCost: 1560,
-                  pricePerLitre: 39,
-                  litresRefueled: 40,
-                  distanceTraveled: 450,
-                  consumptionRate: 450 / 40,
-                  isFullTank: true
-                },
-                {
-                  date: new Date('2024-03-11'),
-                  odometer: 203700,
-                  fuelCost: 1800,
-                  pricePerLitre: 40,
-                  litresRefueled: 45,
-                  distanceTraveled: 450,
-                  consumptionRate: 450 / 45,
-                  isFullTank: true
-                },
-                {
-                  date: new Date('2024-03-20'),
-                  odometer: 204100,
-                  fuelCost: 1640,
-                  pricePerLitre: 41,
-                  litresRefueled: 40,
-                  distanceTraveled: 400,
-                  consumptionRate: 400 / 40,
-                  isFullTank: true
-                },
-                {
-                  date: new Date('2024-03-29'),
-                  odometer: 204550,
-                  fuelCost: 1800,
-                  pricePerLitre: 40,
-                  litresRefueled: 45,
-                  distanceTraveled: 450,
-                  consumptionRate: 450 / 45,
-                  isFullTank: true
-                },
-                {
-                  date: new Date('2024-04-06'),
-                  odometer: 205000,
-                  fuelCost: 1755,
-                  pricePerLitre: 39,
-                  litresRefueled: 45,
-                  distanceTraveled: 450,
-                  consumptionRate: 450 / 45,
-                  isFullTank: true
-                }
-              ]
-            }
+  const enterpriseOrg = await prisma.organization.upsert({
+    where: { name: 'Luxe Logistics Enterprise' },
+    update: {},
+    create: { name: 'Luxe Logistics Enterprise', plan: 'ENTERPRISE' },
+  });
+
+  // Helper to generate a car and logs
+  const seedUserAssets = async (userId, userName, isOrgCar = false, orgId = null) => {
+    const carCount = Math.floor(Math.random() * 2) + 1; // 1 or 2 cars
+    
+    for (let c = 1; c <= carCount; c++) {
+      const fuelTypeChoices = ['GASOLINE', 'DIESEL', 'E20', 'E85'];
+      const chosenFuel = fuelTypeChoices[Math.floor(Math.random() * fuelTypeChoices.length)];
+      
+      const car = await prisma.car.create({
+        data: {
+          name: isOrgCar ? `Fleet Unit ${Math.floor(Math.random() * 100)}` : `${userName}'s ${c === 1 ? 'Daily' : 'Backup'}`,
+          brand: ['Toyota', 'Honda', 'Mazda', 'BMW', 'Tesla'][Math.floor(Math.random() * 5)],
+          model: ['Corolla', 'Civic', 'CX-5', '3 Series', 'Model 3'][Math.floor(Math.random() * 5)],
+          licensePlate: `${String.fromCharCode(65 + Math.floor(Math.random() * 26))}${String.fromCharCode(65 + Math.floor(Math.random() * 26))}-${Math.floor(1000 + Math.random() * 9000)}`,
+          userId: userId,
+          organizationId: isOrgCar ? orgId : null,
+          isPersonal: !isOrgCar,
+          tankSize: 50,
+          currentCarbonFactor: 2.31
+        }
+      });
+
+      // Create 5-8 logs per car for more "realistic" leaderboard
+      let currentOdo = 10000 + Math.floor(Math.random() * 50000);
+      const recordCount = 8;
+
+      for (let r = 1; r <= recordCount; r++) {
+        const distance = 350 + Math.floor(Math.random() * 200);
+        const pricePerLitre = 35 + (Math.random() * 8); 
+        const efficiency = 12 + (Math.random() * 6); // 12-18 km/L
+        const litres = distance / efficiency;
+        const fuelCost = pricePerLitre * litres;
+        currentOdo += distance;
+
+        // Realistic emission factors
+        const EMISSION_FACTORS = { GASOLINE: 2.31, DIESEL: 2.68, E20: 1.85, E85: 1.51 };
+        const carbonEmitted = litres * (EMISSION_FACTORS[chosenFuel] || 2.31);
+
+        await prisma.fuelRecord.create({
+          data: {
+            carId: car.id,
+            submittedById: userId,
+            date: new Date(Date.now() - (recordCount - r) * 3 * 24 * 60 * 60 * 1000), // Every 3 days
+            fuelCost,
+            pricePerLitre,
+            odometer: currentOdo,
+            litresRefueled: litres,
+            distanceTraveled: distance,
+            consumptionRate: efficiency,
+            fuelType: chosenFuel,
+            carbonEmitted,
+            isFullTank: true,
+            fuelLevel: 100
           }
-        ]
+        });
       }
     }
-  })
+  };
 
-  // User 2 — Bob, Honda Civic, 13 records
-  const user2 = await prisma.user.create({
-    data: {
-      name: 'Bob Smith',
-      email: 'bob@example.com',
-      password: hashedPassword,
-      cars: {
-        create: [
-          {
-            name: 'Bob Work Car',
-            brand: 'Honda',
-            model: 'Civic',
-            fuelRecords: {
-              create: [
-                {
-                  date: new Date('2024-02-01'),
-                  odometer: 50000,
-                  fuelCost: 1600,
-                  pricePerLitre: 40,
-                  litresRefueled: 40,
-                  distanceTraveled: 0,
-                  consumptionRate: null,
-                  isFullTank: true
-                },
-                {
-                  date: new Date('2024-02-10'),
-                  odometer: 50600,
-                  fuelCost: 1845,
-                  pricePerLitre: 41,
-                  litresRefueled: 45,
-                  distanceTraveled: 600,
-                  consumptionRate: 600 / 45,
-                  isFullTank: true
-                },
-                {
-                  date: new Date('2024-02-20'),
-                  odometer: 51150,
-                  fuelCost: 1600,
-                  pricePerLitre: 40,
-                  litresRefueled: 40,
-                  distanceTraveled: 550,
-                  consumptionRate: 550 / 40,
-                  isFullTank: true
-                },
-                {
-                  date: new Date('2024-03-01'),
-                  odometer: 51650,
-                  fuelCost: 1560,
-                  pricePerLitre: 39,
-                  litresRefueled: 40,
-                  distanceTraveled: 500,
-                  consumptionRate: 500 / 40,
-                  isFullTank: true
-                },
-                {
-                  date: new Date('2024-03-10'),
-                  odometer: 52250,
-                  fuelCost: 1800,
-                  pricePerLitre: 40,
-                  litresRefueled: 45,
-                  distanceTraveled: 600,
-                  consumptionRate: 600 / 45,
-                  isFullTank: true
-                },
-                {
-                  date: new Date('2024-03-18'),
-                  odometer: 52700,
-                  fuelCost: 1640,
-                  pricePerLitre: 41,
-                  litresRefueled: 40,
-                  distanceTraveled: 450,
-                  consumptionRate: 450 / 40,
-                  isFullTank: true
-                },
-                {
-                  date: new Date('2024-03-26'),
-                  odometer: 53200,
-                  fuelCost: 1600,
-                  pricePerLitre: 40,
-                  litresRefueled: 40,
-                  distanceTraveled: 500,
-                  consumptionRate: 500 / 40,
-                  isFullTank: true
-                },
-                {
-                  date: new Date('2024-04-03'),
-                  odometer: 53750,
-                  fuelCost: 1755,
-                  pricePerLitre: 39,
-                  litresRefueled: 45,
-                  distanceTraveled: 550,
-                  consumptionRate: 550 / 45,
-                  isFullTank: true
-                },
-                {
-                  date: new Date('2024-04-12'),
-                  odometer: 54300,
-                  fuelCost: 1800,
-                  pricePerLitre: 40,
-                  litresRefueled: 45,
-                  distanceTraveled: 550,
-                  consumptionRate: 550 / 45,
-                  isFullTank: true
-                },
-                {
-                  date: new Date('2024-04-20'),
-                  odometer: 54750,
-                  fuelCost: 1640,
-                  pricePerLitre: 41,
-                  litresRefueled: 40,
-                  distanceTraveled: 450,
-                  consumptionRate: 450 / 40,
-                  isFullTank: true
-                },
-                {
-                  date: new Date('2024-04-28'),
-                  odometer: 55200,
-                  fuelCost: 1560,
-                  pricePerLitre: 39,
-                  litresRefueled: 40,
-                  distanceTraveled: 450,
-                  consumptionRate: 450 / 40,
-                  isFullTank: true
-                },
-                {
-                  date: new Date('2024-05-06'),
-                  odometer: 55800,
-                  fuelCost: 2000,
-                  pricePerLitre: 40,
-                  litresRefueled: 50,
-                  distanceTraveled: 600,
-                  consumptionRate: 600 / 50,
-                  isFullTank: true
-                },
-                {
-                  date: new Date('2024-05-15'),
-                  odometer: 56350,
-                  fuelCost: 1845,
-                  pricePerLitre: 41,
-                  litresRefueled: 45,
-                  distanceTraveled: 550,
-                  consumptionRate: 550 / 45,
-                  isFullTank: true
-                }
-              ]
-            }
-          }
-        ]
-      }
-    }
-  })
+  // 2. Individual Users (FREE & PRO)
+  const userSpecs = [
+    ...Array(5).fill({ plan: 'FREE', prefix: 'user' }),
+    ...Array(3).fill({ plan: 'PRO', prefix: 'pro' })
+  ];
 
-  // User 3 — Charlie, Ford Ranger, 15 records
-  const user3 = await prisma.user.create({
-    data: {
-      name: 'Charlie Davis',
-      email: 'charlie@example.com',
-      password: hashedPassword,
-      cars: {
-        create: [
-          {
-            name: 'Charlie Truck',
-            brand: 'Ford',
-            model: 'Ranger',
-            fuelRecords: {
-              create: [
-                {
-                  date: new Date('2024-01-05'),
-                  odometer: 100000,
-                  fuelCost: 2800,
-                  pricePerLitre: 40,
-                  litresRefueled: 70,
-                  distanceTraveled: 0,
-                  consumptionRate: null,
-                  isFullTank: true
-                },
-                {
-                  date: new Date('2024-01-15'),
-                  odometer: 100800,
-                  fuelCost: 3120,
-                  pricePerLitre: 39,
-                  litresRefueled: 80,
-                  distanceTraveled: 800,
-                  consumptionRate: 800 / 80,
-                  isFullTank: true
-                },
-                {
-                  date: new Date('2024-01-25'),
-                  odometer: 101550,
-                  fuelCost: 3000,
-                  pricePerLitre: 40,
-                  litresRefueled: 75,
-                  distanceTraveled: 750,
-                  consumptionRate: 750 / 75,
-                  isFullTank: true
-                },
-                {
-                  date: new Date('2024-02-03'),
-                  odometer: 102300,
-                  fuelCost: 2925,
-                  pricePerLitre: 39,
-                  litresRefueled: 75,
-                  distanceTraveled: 750,
-                  consumptionRate: 750 / 75,
-                  isFullTank: true
-                },
-                {
-                  date: new Date('2024-02-12'),
-                  odometer: 103100,
-                  fuelCost: 3200,
-                  pricePerLitre: 40,
-                  litresRefueled: 80,
-                  distanceTraveled: 800,
-                  consumptionRate: 800 / 80,
-                  isFullTank: true
-                },
-                {
-                  date: new Date('2024-02-22'),
-                  odometer: 103850,
-                  fuelCost: 3075,
-                  pricePerLitre: 41,
-                  litresRefueled: 75,
-                  distanceTraveled: 750,
-                  consumptionRate: 750 / 75,
-                  isFullTank: true
-                },
-                {
-                  date: new Date('2024-03-02'),
-                  odometer: 104500,
-                  fuelCost: 2600,
-                  pricePerLitre: 40,
-                  litresRefueled: 65,
-                  distanceTraveled: 650,
-                  consumptionRate: 650 / 65,
-                  isFullTank: true
-                },
-                {
-                  date: new Date('2024-03-11'),
-                  odometer: 105300,
-                  fuelCost: 3200,
-                  pricePerLitre: 40,
-                  litresRefueled: 80,
-                  distanceTraveled: 800,
-                  consumptionRate: 800 / 80,
-                  isFullTank: true
-                },
-                {
-                  date: new Date('2024-03-20'),
-                  odometer: 106000,
-                  fuelCost: 2730,
-                  pricePerLitre: 39,
-                  litresRefueled: 70,
-                  distanceTraveled: 700,
-                  consumptionRate: 700 / 70,
-                  isFullTank: true
-                },
-                {
-                  date: new Date('2024-03-30'),
-                  odometer: 106700,
-                  fuelCost: 2800,
-                  pricePerLitre: 40,
-                  litresRefueled: 70,
-                  distanceTraveled: 700,
-                  consumptionRate: 700 / 70,
-                  isFullTank: true
-                },
-                {
-                  date: new Date('2024-04-08'),
-                  odometer: 107500,
-                  fuelCost: 3200,
-                  pricePerLitre: 40,
-                  litresRefueled: 80,
-                  distanceTraveled: 800,
-                  consumptionRate: 800 / 80,
-                  isFullTank: true
-                },
-                {
-                  date: new Date('2024-04-17'),
-                  odometer: 108200,
-                  fuelCost: 2870,
-                  pricePerLitre: 41,
-                  litresRefueled: 70,
-                  distanceTraveled: 700,
-                  consumptionRate: 700 / 70,
-                  isFullTank: true
-                },
-                {
-                  date: new Date('2024-04-26'),
-                  odometer: 108950,
-                  fuelCost: 3000,
-                  pricePerLitre: 40,
-                  litresRefueled: 75,
-                  distanceTraveled: 750,
-                  consumptionRate: 750 / 75,
-                  isFullTank: true
-                },
-                {
-                  date: new Date('2024-05-05'),
-                  odometer: 109600,
-                  fuelCost: 2535,
-                  pricePerLitre: 39,
-                  litresRefueled: 65,
-                  distanceTraveled: 650,
-                  consumptionRate: 650 / 65,
-                  isFullTank: true
-                },
-                {
-                  date: new Date('2024-05-14'),
-                  odometer: 110400,
-                  fuelCost: 3200,
-                  pricePerLitre: 40,
-                  litresRefueled: 80,
-                  distanceTraveled: 800,
-                  consumptionRate: 800 / 80,
-                  isFullTank: true
-                }
-              ]
-            }
-          }
-        ]
-      }
-    }
-  })
+  for (const [idx, spec] of userSpecs.entries()) {
+    const email = `${spec.prefix}${idx + 1}@example.com`;
+    const user = await prisma.user.upsert({
+      where: { email },
+      update: {},
+      create: {
+        email,
+        name: `${spec.plan} User ${idx + 1}`,
+        password: passwordHash,
+        role: 'INDIVIDUAL',
+        plan: spec.plan,
+      },
+    });
+    console.log(`Seeding assets for ${email}...`);
+    await seedUserAssets(user.id, user.name);
+  }
 
-  console.log('Seeding finished.')
+  // 3. Organization Admins
+  const admins = [
+    { email: 'admin@freefleet.com', name: 'Free Admin', org: freeOrg, plan: 'FREE' },
+    { email: 'admin@luxelogistics.com', name: 'Enterprise Admin', org: enterpriseOrg, plan: 'ENTERPRISE' }
+  ];
+
+  for (const adminData of admins) {
+    const admin = await prisma.user.upsert({
+      where: { email: adminData.email },
+      update: {},
+      create: {
+        email: adminData.email,
+        name: adminData.name,
+        password: passwordHash,
+        role: 'ADMIN',
+        plan: adminData.plan,
+        organizationId: adminData.org.id,
+      },
+    });
+    console.log(`Seeding fleet assets for ${adminData.org.name}...`);
+    await seedUserAssets(admin.id, adminData.org.name, true, adminData.org.id);
+  }
+
+  // 4. Enterprise Employees (The Leaderboard participants)
+  console.log('Seeding Enterprise Employees...');
+  const employees = [
+    { name: 'Takumi Fujiwara', email: 'takumi@luxelogistics.com', role: 'DRIVER' },
+    { name: 'Keisuke Takahashi', email: 'keisuke@luxelogistics.com', role: 'DRIVER' },
+    { name: 'Ryosuke Takahashi', email: 'ryosuke@luxelogistics.com', role: 'DRIVER' },
+    { name: 'Kenji Speedstars', email: 'kenji@luxelogistics.com', role: 'USER' },
+    { name: 'Itsuki Takeuchi', email: 'itsuki@luxelogistics.com', role: 'USER' },
+  ];
+
+  for (const emp of employees) {
+    const user = await prisma.user.upsert({
+      where: { email: emp.email },
+      update: {},
+      create: {
+        email: emp.email,
+        name: emp.name,
+        password: passwordHash,
+        role: emp.role,
+        plan: 'ENTERPRISE', // Inherit org plan
+        organizationId: enterpriseOrg.id,
+      },
+    });
+    console.log(`Seeding telemetry for operator: ${emp.name}...`);
+    await seedUserAssets(user.id, emp.name, true, enterpriseOrg.id);
+  }
+
+  console.log('--- Seed Completed Successfully with Full Fleet Activity ---');
 }
 
 main()
-  .then(async () => {
-    await prisma.$disconnect()
+  .catch((e) => {
+    console.error(e);
+    process.exit(1);
   })
-  .catch(async (e) => {
-    console.error(e)
-    await prisma.$disconnect()
-    process.exit(1)
-  })
+  .finally(async () => {
+    await prisma.$disconnect();
+  });

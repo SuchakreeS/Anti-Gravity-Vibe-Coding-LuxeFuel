@@ -9,6 +9,8 @@ function FuelEntryForm({ selectedCar, onAddFuel, stats, onClose }) {
     pricePerLitre: '', 
     odometer: '', 
     isFullTank: true,
+    fuelLevel: 100,
+    fuelType: 'GASOLINE',
     date: new Date().toISOString().slice(0, 16) // Format: YYYY-MM-DDTHH:mm
   });
 
@@ -22,6 +24,8 @@ function FuelEntryForm({ selectedCar, onAddFuel, stats, onClose }) {
       pricePerLitre: toTHB(parseFloat(fuelFormData.pricePerLitre)),
       odometer: parseFloat(fuelFormData.odometer),
       isFullTank: fuelFormData.isFullTank,
+      fuelLevel: fuelFormData.isFullTank ? 100 : fuelFormData.fuelLevel,
+      fuelType: fuelFormData.fuelType,
       date: fuelFormData.date
     };
     
@@ -32,6 +36,8 @@ function FuelEntryForm({ selectedCar, onAddFuel, stats, onClose }) {
       pricePerLitre: '', 
       odometer: '', 
       isFullTank: true,
+      fuelLevel: 100,
+      fuelType: 'GASOLINE',
       date: new Date().toISOString().slice(0, 16)
     });
     onClose();
@@ -52,31 +58,67 @@ function FuelEntryForm({ selectedCar, onAddFuel, stats, onClose }) {
           ✕
         </button>
         <div className="card-body">
-          <h2 className="card-title text-accent border-b border-base-300 pb-2">Add Fuel Record</h2>
+          <h2 className="card-title text-accent border-b border-base-300 pb-2 font-['Rajdhani'] font-black italic uppercase tracking-tighter">Add Fuel Record</h2>
           <form onSubmit={handleSubmit} className="flex flex-col gap-2">
-            <label className="text-sm opacity-70">Price of Gas ({currency})</label>
-            <input required type="number" step="0.01" className="input [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none input-sm input-bordered" value={fuelFormData.fuelCost} onChange={e => setFuelFormData({ ...fuelFormData, fuelCost: e.target.value })} />
+            <div className="grid grid-cols-2 gap-3">
+              <div className="form-control">
+                <label className="text-[10px] font-black uppercase tracking-widest text-text-secondary opacity-60 ml-1">Fuel Type</label>
+                <select 
+                  className="select select-bordered select-sm w-full font-bold"
+                  value={fuelFormData.fuelType}
+                  onChange={e => setFuelFormData({ ...fuelFormData, fuelType: e.target.value })}
+                >
+                  <option value="GASOLINE">GASOLINE</option>
+                  <option value="DIESEL">DIESEL</option>
+                  <option value="E20">E20</option>
+                  <option value="E85">E85</option>
+                </select>
+              </div>
+              <div className="form-control">
+                <label className="text-[10px] font-black uppercase tracking-widest text-text-secondary opacity-60 ml-1">Price of Gas ({currency})</label>
+                <input required type="number" step="0.01" className="input [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none input-sm input-bordered font-bold" value={fuelFormData.fuelCost} onChange={e => setFuelFormData({ ...fuelFormData, fuelCost: e.target.value })} />
+              </div>
+            </div>
 
-            <label className="text-sm opacity-70 mt-2">Gas Price per Litre ({currency})</label>
-            <input required type="number" step="0.01" className="input [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none input-sm input-bordered" value={fuelFormData.pricePerLitre} onChange={e => setFuelFormData({ ...fuelFormData, pricePerLitre: e.target.value })} />
+            <div className="grid grid-cols-2 gap-3 mt-1">
+              <div className="form-control">
+                <label className="text-[10px] font-black uppercase tracking-widest text-text-secondary opacity-60 ml-1">Price per Litre ({currency})</label>
+                <input required type="number" step="0.01" className="input [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none input-sm input-bordered font-bold" value={fuelFormData.pricePerLitre} onChange={e => setFuelFormData({ ...fuelFormData, pricePerLitre: e.target.value })} />
+              </div>
+              <div className="form-control">
+                <label className="text-[10px] font-black uppercase tracking-widest text-text-secondary opacity-60 ml-1">Current Mileage (km)</label>
+                <input required type="number" step="0.1" className="input [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none input-sm input-bordered font-bold" value={fuelFormData.odometer} onChange={e => setFuelFormData({ ...fuelFormData, odometer: e.target.value })} />
+              </div>
+            </div>
 
-            <label className="text-sm opacity-70 mt-2">Current Mileage (km)</label>
-            <input required type="number" step="0.1" className="input [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none input-sm input-bordered" value={fuelFormData.odometer} onChange={e => setFuelFormData({ ...fuelFormData, odometer: e.target.value })} />
             {stats?.latest && (
-              <span className="text-[10px] opacity-40 -mt-1 block ml-1">
+              <span className="text-[10px] opacity-40 -mt-1 block ml-1 uppercase font-bold tracking-widest text-right">
                 Previous: {stats.latest.odometer.toLocaleString()} km
               </span>
             )}
 
-            <label className="text-sm opacity-70 mt-2">Date & Time</label>
-            <input required type="datetime-local" className="input input-sm input-bordered" value={fuelFormData.date} onChange={e => setFuelFormData({ ...fuelFormData, date: e.target.value })} />
+            <label className="text-[10px] font-black uppercase tracking-widest text-text-secondary opacity-60 ml-1 mt-1">Date & Time</label>
+            <input required type="datetime-local" className="input input-sm input-bordered font-bold" value={fuelFormData.date} onChange={e => setFuelFormData({ ...fuelFormData, date: e.target.value })} />
 
-            <label className="label cursor-pointer mt-2 justify-start gap-4">
-              <span className="label-text opacity-80 font-medium">Full tank</span>
-              <input type="checkbox" className="toggle toggle-accent" checked={fuelFormData.isFullTank} onChange={e => setFuelFormData({ ...fuelFormData, isFullTank: e.target.checked })} />
-            </label>
+            <div className="flex items-center justify-between mt-4 bg-base-200 p-3 rounded-lg border border-industrial-border">
+              <label className="label cursor-pointer justify-start gap-4 p-0">
+                <span className="label-text opacity-80 font-black uppercase text-[10px] tracking-widest">Full tank</span>
+                <input type="checkbox" className="toggle toggle-accent toggle-sm" checked={fuelFormData.isFullTank} onChange={e => setFuelFormData({ ...fuelFormData, isFullTank: e.target.checked })} />
+              </label>
 
-            <button className="btn btn-accent btn-sm mt-4">Refuel</button>
+              {!fuelFormData.isFullTank && (
+                <div className="text-right">
+                  <span className="text-[9px] font-black uppercase tracking-widest text-turbo-orange animate-pulse">
+                    Auto-Calculating Level...
+                  </span>
+                  <p className="text-[8px] opacity-40 uppercase font-bold tracking-tighter">Carbon Intensity Segments Enabled</p>
+                </div>
+              )}
+            </div>
+
+            <button className="btn btn-accent btn-sm mt-4 font-['Rajdhani'] font-black uppercase tracking-widest">
+              Refuel // Initialize Log
+            </button>
           </form>
 
         </div>

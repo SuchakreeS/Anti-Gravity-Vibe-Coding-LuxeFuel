@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { useAuthStore } from './store/useAuthStore';
+import { useThemeStore } from './store/useThemeStore';
 import ProtectedRoute from './components/ProtectedRoute';
 import Login from './pages/Login';
 import Register from './pages/Register';
@@ -9,12 +10,18 @@ import Landing from './pages/Landing';
 import Dashboard from './pages/Dashboard';
 import Profile from './pages/Profile';
 import MileageLog from './pages/MileageLog';
+import Maintenance from './pages/Maintenance';
 import AdminPanel from './pages/AdminPanel';
 import AdminRoute from './components/AdminRoute';
 import { CyberToastProvider } from './components/CyberToast';
 
 function App() {
   const user = useAuthStore((state) => state.user);
+  const initTheme = useThemeStore((state) => state.initTheme);
+
+  useEffect(() => {
+    initTheme();
+  }, [initTheme]);
 
   return (
     <CyberToastProvider>
@@ -27,6 +34,7 @@ function App() {
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/profile" element={<Profile />} />
           <Route path="/mileage-log" element={<MileageLog />} />
+          <Route path="/maintenance" element={<Maintenance />} />
           <Route element={<AdminRoute />}>
             <Route path="/admin" element={<AdminPanel />} />
           </Route>

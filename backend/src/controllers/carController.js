@@ -7,10 +7,39 @@ const carSchema = z.object({
   brand: z.string().min(1),
   model: z.string().min(1),
   licensePlate: z.string().nullable().optional(),
+  tankSize: z.number().nonnegative().nullable().optional(),
   otherSpecs: z.string().nullable().optional(),
   maintenanceData: z.string().nullable().optional(),
   isPersonal: z.boolean().optional().default(false),
 });
+
+const getAccessibleCarWhereClause = (id, user, action) => {
+  const { id: userId, role, organizationId: orgId } = user;
+  
+  if (action === 'read') {
+    if (orgId) {
+      return { id, OR: [{ organizationId: orgId, isPersonal: false }, { userId, isPersonal: true }] };
+    }
+    return { id, userId };
+  }
+  
+  if (action === 'update') {
+    if (role === 'ADMIN' && orgId) {
+      return { id, OR: [{ organizationId: orgId, isPersonal: false }, { userId, isPersonal: true }] };
+    }
+    return { id, userId };
+  }
+
+  if (action === 'delete') {
+    if (role === 'ADMIN' && orgId) {
+      return { id, OR: [{ organizationId: orgId, isPersonal: false }, { userId, isPersonal: true }] };
+    }
+    if (role === 'USER') {
+      return { id, userId, isPersonal: true };
+    }
+    return { id, userId };
+  }
+};
 
 export const createCar = async (req, res) => {
   try {
@@ -24,6 +53,7 @@ export const createCar = async (req, res) => {
       brand: data.brand,
       model: data.model,
       licensePlate: data.licensePlate || null,
+      tankSize: data.tankSize,
       otherSpecs: data.otherSpecs || null,
       maintenanceData: data.maintenanceData || null,
     };
@@ -97,22 +127,7 @@ export const getCars = async (req, res) => {
 export const getCar = async (req, res) => {
   try {
     const id = parseInt(req.params.id);
-    const userId = req.user.id;
-    const orgId = req.user.organizationId;
-
-    // Build where clause based on role
-    let whereClause;
-    if (orgId) {
-      whereClause = {
-        id,
-        OR: [
-          { organizationId: orgId, isPersonal: false },
-          { userId: userId, isPersonal: true }
-        ]
-      };
-    } else {
-      whereClause = { id, userId };
-    }
+    const whereClause = getAccessibleCarWhereClause(id, req.user, 'read');
 
     const car = await prisma.car.findFirst({
       where: whereClause,
@@ -128,25 +143,9 @@ export const getCar = async (req, res) => {
 export const updateCar = async (req, res) => {
   try {
     const id = parseInt(req.params.id);
-    const userId = req.user.id;
-    const orgId = req.user.organizationId;
-    const role = req.user.role;
+    const whereClause = getAccessibleCarWhereClause(id, req.user, 'update');
 
-    // Only admin can update org cars; anyone can update their personal cars
-    let existing;
-    if (role === 'ADMIN' && orgId) {
-      existing = await prisma.car.findFirst({
-        where: {
-          id,
-          OR: [
-            { organizationId: orgId, isPersonal: false },
-            { userId, isPersonal: true }
-          ]
-        }
-      });
-    } else {
-      existing = await prisma.car.findFirst({ where: { id, userId } });
-    }
+    const existing = await prisma.car.findFirst({ where: whereClause });
 
     if (!existing) return res.status(404).json({ message: 'Car not found' });
 
@@ -158,6 +157,7 @@ export const updateCar = async (req, res) => {
         brand: data.brand,
         model: data.model,
         licensePlate: data.licensePlate || existing.licensePlate,
+        tankSize: data.tankSize ?? existing.tankSize,
         otherSpecs: data.otherSpecs || null,
         maintenanceData: data.maintenanceData || existing.maintenanceData,
       }
@@ -172,32 +172,16 @@ export const updateCar = async (req, res) => {
 export const deleteCar = async (req, res) => {
   try {
     const id = parseInt(req.params.id);
-    const userId = req.user.id;
-    const orgId = req.user.organizationId;
-    const role = req.user.role;
+    const whereClause = getAccessibleCarWhereClause(id, req.user, 'delete');
 
-    let existing;
-    if (role === 'admin' && orgId) {
-      existing = await prisma.car.findFirst({
-        where: {
-          id,
-          OR: [
-            { organizationId: orgId, isPersonal: false },
-            { userId, isPersonal: true }
-          ]
-        }
-      });
-    } else if (role === 'individual') {
-      existing = await prisma.car.findFirst({ where: { id, userId } });
-    } else {
-      // 'user' role can only delete their personal cars
-      existing = await prisma.car.findFirst({ where: { id, userId, isPersonal: true } });
-    }
+    const existing = await prisma.car.findFirst({ where: whereClause });
 
     if (!existing) return res.status(404).json({ message: 'Car not found' });
 
-    await prisma.fuelRecord.deleteMany({ where: { carId: id } });
-    await prisma.car.delete({ where: { id } });
+    await prisma.$transaction([
+      prisma.fuelRecord.deleteMany({ where: { carId: id } }),
+      prisma.car.delete({ where: { id } })
+    ]);
     res.json({ message: 'Car deleted successfully' });
   } catch (error) {
     res.status(500).json({ message: error.message });

@@ -77,6 +77,7 @@ export function useFuelRecords(selectedCarId) {
       ...r,
       convertedFuelCost: convert(r.fuelCost),
       convertedPricePerLitre: convert(r.pricePerLitre),
+      costPerKm: (r.distanceTraveled > 0) ? (convert(r.fuelCost) / r.distanceTraveled) : null,
     }));
   }, [records, convert, currency]);
 

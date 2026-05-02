@@ -4,6 +4,7 @@ import api from '../../utils/api';
 import { cyberToast } from '../../components/CyberToast';
 import Layout from '../../components/Layout';
 import { useCars } from '../../hooks/useCars';
+import { useVehicleStore } from '../../store/useVehicleStore';
 
 import ProfileInfo from './ProfileInfo';
 import ChangePassword from './ChangePassword';
@@ -26,13 +27,15 @@ function Profile() {
     fetchModels 
   } = useCars(user);
 
+  const { deleteCar: deleteCarFromStore } = useVehicleStore();
+
   const [profile, setProfile] = useState(null);
   const [profileForm, setProfileForm] = useState({ name: '', email: '' });
   const [passwordForm, setPasswordForm] = useState({ currentPassword: '', newPassword: '', confirmPassword: '' });
   const [editingCar, setEditingCar] = useState(null);
-  const [carForm, setCarForm] = useState({ name: '', brand: '', model: '', licensePlate: '', otherSpecs: '' });
+  const [carForm, setCarForm] = useState({ name: '', brand: '', model: '', licensePlate: '', tankSize: '', otherSpecs: '' });
   const [addingCar, setAddingCar] = useState(false);
-  const [newCarForm, setNewCarForm] = useState({ name: '', brand: '', model: '', licensePlate: '', otherSpecs: '' });
+  const [newCarForm, setNewCarForm] = useState({ name: '', brand: '', model: '', licensePlate: '', tankSize: '', otherSpecs: '' });
   const [isManualEntry, setIsManualEntry] = useState(false);
   const [useOwnCar, setUseOwnCar] = useState(false);
 
@@ -90,13 +93,24 @@ function Profile() {
 
   const openEditCar = (car) => {
     setEditingCar(car);
-    setCarForm({ name: car.name, brand: car.brand, model: car.model, licensePlate: car.licensePlate || '', otherSpecs: car.otherSpecs || '' });
+    setCarForm({ 
+      name: car.name, 
+      brand: car.brand, 
+      model: car.model, 
+      licensePlate: car.licensePlate || '', 
+      tankSize: car.tankSize || '',
+      otherSpecs: car.otherSpecs || '' 
+    });
   };
 
   const handleUpdateCar = async (e) => {
     e.preventDefault();
     try {
-      const res = await api.put(`/cars/${editingCar.id}`, carForm);
+      const payload = { 
+        ...carForm, 
+        tankSize: carForm.tankSize ? parseFloat(carForm.tankSize) : null 
+      };
+      const res = await api.put(`/cars/${editingCar.id}`, payload);
       setCars(cars.map(c => c.id === editingCar.id ? res.data : c));
       setEditingCar(null);
       cyberToast.success('Vehicle Updated // Config Saved');
@@ -111,6 +125,7 @@ function Profile() {
       try {
         await api.delete(`/cars/${carId}`);
         setCars(cars.filter(c => c.id !== carId));
+        deleteCarFromStore(carId);
         cyberToast.warning('Vehicle Purged // Records Cleared');
       } catch (err) {
         cyberToast.error(err.response?.data?.message || 'Failed to delete car');
@@ -121,7 +136,10 @@ function Profile() {
   const handleAddCar = async (e) => {
     e.preventDefault();
     try {
-      const carData = { ...newCarForm };
+      const carData = { 
+        ...newCarForm,
+        tankSize: newCarForm.tankSize ? parseFloat(newCarForm.tankSize) : null
+      };
       if (isAdmin()) {
         carData.isPersonal = useOwnCar;
       } else if (isOrgUser()) {

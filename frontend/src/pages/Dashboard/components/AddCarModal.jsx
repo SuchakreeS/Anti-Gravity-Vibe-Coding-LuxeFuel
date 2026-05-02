@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 
 function AddCarModal({ onAddCar, makes, models, fetchModels, loadingMakes, loadingModels, userRole = 'individual' }) {
-  const [newCarForm, setNewCarForm] = useState({ name: '', brand: '', model: '', licensePlate: '', otherSpecs: '' });
+  const [newCarForm, setNewCarForm] = useState({ name: '', brand: '', model: '', licensePlate: '', tankSize: '', otherSpecs: '' });
   const [isManualEntry, setIsManualEntry] = useState(false);
   const [useOwnCar, setUseOwnCar] = useState(userRole === 'user' || userRole === 'USER' || userRole === 'DRIVER');
 
@@ -73,15 +73,27 @@ function AddCarModal({ onAddCar, makes, models, fetchModels, loadingMakes, loadi
               />
             </div>
 
-            <div className="space-y-1">
-              <label className="text-[10px] font-black uppercase tracking-widest text-text-secondary ml-1">License Identifier</label>
-              <input 
-                placeholder="E.G. SKY-LINE-34" 
-                className="w-full bg-asphalt border border-industrial-border rounded-sm px-4 py-3 text-white placeholder:text-slate-700 focus:outline-none focus:border-neon-violet transition-all duration-300 uppercase font-bold italic"
-                required={isOrgMember}
-                value={newCarForm.licensePlate} 
-                onChange={e => setNewCarForm({ ...newCarForm, licensePlate: e.target.value })} 
-              />
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1">
+                <label className="text-[10px] font-black uppercase tracking-widest text-text-secondary ml-1">License Identifier</label>
+                <input 
+                  placeholder="E.G. SKY-LINE-34" 
+                  className="w-full bg-asphalt border border-industrial-border rounded-sm px-4 py-3 text-white placeholder:text-slate-700 focus:outline-none focus:border-neon-violet transition-all duration-300 uppercase font-bold italic"
+                  required={isOrgMember}
+                  value={newCarForm.licensePlate} 
+                  onChange={e => setNewCarForm({ ...newCarForm, licensePlate: e.target.value })} 
+                />
+              </div>
+              <div className="space-y-1">
+                <label className="text-[10px] font-black uppercase tracking-widest text-text-secondary ml-1">Tank Capacity (L)</label>
+                <input 
+                  type="number"
+                  placeholder="E.G. 50" 
+                  className="w-full bg-asphalt border border-industrial-border rounded-sm px-4 py-3 text-white placeholder:text-slate-700 focus:outline-none focus:border-neon-violet transition-all duration-300 uppercase font-bold italic"
+                  value={newCarForm.tankSize} 
+                  onChange={e => setNewCarForm({ ...newCarForm, tankSize: parseFloat(e.target.value) || 0 })} 
+                />
+              </div>
             </div>
 
             <div className="space-y-2">

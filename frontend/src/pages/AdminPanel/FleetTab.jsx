@@ -39,6 +39,17 @@ function FleetTab({
                 </div>
               </div>
 
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div className="form-control">
+                  <label className="label py-1"><span className="label-text text-sm opacity-70">Tank Size (L)</span></label>
+                  <input type="number" placeholder="e.g. 50" className="input input-sm input-bordered" value={carForm.tankSize} onChange={e => setCarForm({ ...carForm, tankSize: parseFloat(e.target.value) || 0 })} />
+                </div>
+                <div className="form-control">
+                  <label className="label py-1"><span className="label-text text-sm opacity-70">Other Specs (Optional)</span></label>
+                  <input placeholder="2024 Diesel" className="input input-sm input-bordered" value={carForm.otherSpecs} onChange={e => setCarForm({ ...carForm, otherSpecs: e.target.value })} />
+                </div>
+              </div>
+
               <div className="form-control">
                 <div className="flex justify-between items-center mb-1">
                   <span className="text-sm font-medium opacity-70">Brand & Model</span>
@@ -83,11 +94,6 @@ function FleetTab({
                 )}
               </div>
 
-              <div className="form-control">
-                <label className="label py-1"><span className="label-text text-sm opacity-70">Other Specs (Optional)</span></label>
-                <input placeholder="2024 Diesel" className="input input-sm input-bordered" value={carForm.otherSpecs} onChange={e => setCarForm({ ...carForm, otherSpecs: e.target.value })} />
-              </div>
-
               <div className="flex gap-2 mt-2">
                 <button type="submit" className="btn btn-accent btn-sm">Add Car</button>
                 <button type="button" className="btn btn-ghost btn-sm" onClick={() => setShowCarForm(false)}>Cancel</button>
@@ -105,9 +111,12 @@ function FleetTab({
                 <div>
                   <div className="font-bold text-lg">{car.name}</div>
                   <div className="opacity-70">{car.brand} {car.model}</div>
-                  <div className="flex gap-3 mt-1">
+                  <div className="flex flex-wrap gap-3 mt-1">
                     {car.licensePlate && (
                       <span className="badge badge-outline badge-sm">🔖 {car.licensePlate}</span>
+                    )}
+                    {car.tankSize > 0 && (
+                      <span className="badge badge-outline badge-sm">🛢️ {car.tankSize}L</span>
                     )}
                     {car.otherSpecs && <span className="text-sm opacity-50">{car.otherSpecs}</span>}
                   </div>

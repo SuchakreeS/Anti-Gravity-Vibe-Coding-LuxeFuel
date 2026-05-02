@@ -20,6 +20,13 @@ enum Role {
   INDIVIDUAL
 }
 
+enum FuelType {
+  GASOLINE
+  DIESEL
+  E20
+  E85
+}
+
 model Organization {
   id        Int        @id @default(autoincrement())
   name      String     @unique
@@ -53,8 +60,10 @@ model Car {
   brand               String
   model               String
   licensePlate        String?
+  tankSize            Float?
   otherSpecs          String?
   isPersonal          Boolean       @default(false)
+  currentCarbonFactor Float         @default(2.31)
   lastServiceMileage  Float         @default(0)
   serviceInterval     Float         @default(10000)
   userId              Int?
@@ -80,6 +89,9 @@ model FuelRecord {
   litresRefueled   Float
   distanceTraveled Float
   consumptionRate  Float?
+  fuelLevel        Float?   // 0-100% after refill
+  fuelType         FuelType @default(GASOLINE)
+  carbonEmitted    Float?   // kg CO2
   isFullTank       Boolean  @default(true)
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt

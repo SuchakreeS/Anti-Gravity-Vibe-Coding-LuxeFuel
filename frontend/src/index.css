@@ -4,24 +4,40 @@
 @tailwind utilities;
 
 :root {
-  /* Base Colors */
+  /* Default Dark JDM Palette */
   --background: #050508;      /* Deep Asphalt */
   --surface: #0F111A;         /* Carbon Slate */
   --border: #1E293B;          /* Industrial Navy */
   
-  /* JDM Accents */
-  --midnight-purple: #280137; /* R34 Midnight Purple II */
-  --neon-violet: #A855F7;     /* Digital Glow */
-  --turbo-orange: #F97316;    /* Warning/Heat Accent */
+  --midnight-purple: #280137;
+  --neon-violet: #A855F7;
+  --turbo-orange: #F97316;
   
-  /* Text */
   --text-primary: #F8FAFC;
   --text-secondary: #94A3B8;
+  
+  --shadow-neon: 0 0 15px rgba(168, 85, 247, 0.4);
+}
+
+[data-theme='light_jdm'] {
+  /* High-Tech Light Palette */
+  --background: #F1F5F9;      /* Light Grey Asphalt */
+  --surface: #FFFFFF;         /* Pure White */
+  --border: #CBD5E1;          /* Defined Industrial Border */
+  
+  --midnight-purple: #4C1D95; /* Deeper Purple for contrast */
+  --neon-violet: #7C3AED;     /* Punchy Violet */
+  --turbo-orange: #EA580C;    /* Deep Turbo Orange */
+  
+  --text-primary: #0F172A;    /* Slate 900 */
+  --text-secondary: #64748B;  /* Slate 500 */
+  
+  --shadow-neon: 0 4px 15px rgba(124, 58, 237, 0.2);
 }
 
 @layer utilities {
   .shadow-neon {
-    box-shadow: 0 0 15px rgba(168, 85, 247, 0.4);
+    box-shadow: var(--shadow-neon);
   }
   .shadow-neon-hover:hover {
     box-shadow: 0 0 25px rgba(168, 85, 247, 0.6);
@@ -38,7 +54,36 @@
 /* Global Styles */
 body {
   background-color: var(--background);
+  background-image: 
+    radial-gradient(circle at center, rgba(168, 85, 247, 0.03) 0%, transparent 70%),
+    linear-gradient(var(--border) 0.5px, transparent 0.5px), 
+    linear-gradient(90deg, var(--border) 0.5px, transparent 0.5px);
+  background-size: 100% 100%, 40px 40px, 40px 40px;
+  background-attachment: fixed;
   color: var(--text-primary);
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+[data-theme='light_jdm'] body {
+  background-image: 
+    radial-gradient(circle at center, rgba(124, 58, 237, 0.05) 0%, transparent 70%),
+    linear-gradient(rgba(0,0,0,0.03) 0.5px, transparent 0.5px), 
+    linear-gradient(90deg, rgba(0,0,0,0.03) 0.5px, transparent 0.5px);
+}
+
+/* Scrollbar styling for JDM vibe */
+::-webkit-scrollbar {
+  width: 6px;
+}
+::-webkit-scrollbar-track {
+  background: var(--background);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 10px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--neon-violet);
 }
 
 /* Hide spin buttons from number inputs */

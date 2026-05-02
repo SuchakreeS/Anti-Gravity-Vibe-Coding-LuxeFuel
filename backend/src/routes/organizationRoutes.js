@@ -9,6 +9,7 @@ router.use(authMiddleware);
 
 router.get('/', requireOrgMember, organizationController.getOrganization);
 router.get('/members', requireAdmin, organizationController.getMembers);
+router.get('/leaderboard', requireAdmin, organizationController.getLeaderboard);
 router.post('/members', requireAdmin, organizationController.createMember);
 router.delete('/members/:id', requireAdmin, organizationController.removeMember);
 

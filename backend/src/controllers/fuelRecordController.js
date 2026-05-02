@@ -6,6 +6,7 @@ const fuelRecordSchema = z.object({
   pricePerLitre: z.number().nonnegative(),
   odometer: z.number().nonnegative(),
   isFullTank: z.boolean().default(true),
+  fuelLevel: z.number().min(0).max(100).optional(),
   date: z.string().optional().refine((val) => !val || !isNaN(Date.parse(val)), {
     message: "Invalid date format",
   }),
@@ -54,7 +55,7 @@ export const addFuelRecord = async (req, res) => {
     const car = await findAccessibleCar(carId, req.user);
     if (!car) return res.status(404).json({ message: 'Car not found' });
 
-    const { fuelCost, pricePerLitre, odometer, isFullTank, date } = fuelRecordSchema.parse(req.body);
+    const { fuelCost, pricePerLitre, odometer, isFullTank, fuelLevel, date } = fuelRecordSchema.parse(req.body);
     const litresRefueled = pricePerLitre > 0 ? (fuelCost / pricePerLitre) : 0;
 
     const record = await prisma.fuelRecord.create({
@@ -67,6 +68,7 @@ export const addFuelRecord = async (req, res) => {
         distanceTraveled: 0, // Will be recalculated
         consumptionRate: null, // Will be recalculated
         isFullTank,
+        fuelLevel: isFullTank ? 100 : fuelLevel,
         submittedById: req.user.id,
         date: date ? new Date(date) : undefined
       }
@@ -118,7 +120,41 @@ export const getFuelRecords = async (req, res) => {
   }
 };
 
+const EMISSION_FACTORS = {
+  GASOLINE: 2.31,
+  DIESEL: 2.68,
+  E20: 1.85,
+  E85: 1.51,
+};
+
+const calculateGlobalAvgConsumption = (records) => {
+  const fullTankRecords = records.filter(r => r.isFullTank);
+  if (fullTankRecords.length < 2) return null;
+
+  const firstFT = fullTankRecords[0];
+  const lastFT = fullTankRecords[fullTankRecords.length - 1];
+  const totalDist = lastFT.odometer - firstFT.odometer;
+  
+  const midRecords = records.slice(records.indexOf(firstFT) + 1, records.indexOf(lastFT) + 1);
+  const totalFuel = midRecords.reduce((sum, r) => sum + r.litresRefueled, 0);
+  
+  return totalFuel > 0 ? totalDist / totalFuel : null;
+};
+
+const calculateNewBlendFactor = (carTankSize, runningFuelLevel, fuelUsed, addedLitres, addedFactor, currentBlendFactor) => {
+  if (carTankSize <= 0) return currentBlendFactor;
+  
+  const remainingLitres = Math.max(0, ((runningFuelLevel / 100) * carTankSize) - fuelUsed);
+  const newTotalLitres = remainingLitres + addedLitres;
+  
+  if (newTotalLitres > 0) {
+    return ((remainingLitres * currentBlendFactor) + (addedLitres * addedFactor)) / newTotalLitres;
+  }
+  return currentBlendFactor;
+};
+
 const recalculateCarHistory = async (carId) => {
+  const car = await prisma.car.findUnique({ where: { id: carId } });
   const records = await prisma.fuelRecord.findMany({
     where: { carId },
     orderBy: [
@@ -130,36 +166,87 @@ const recalculateCarHistory = async (carId) => {
 
   if (records.length === 0) return;
 
-  for (let i = 0; i < records.length; i++) {
-    const current = records[i];
-    const previous = i > 0 ? records[i - 1] : null;
+  const globalAvgConsumption = calculateGlobalAvgConsumption(records);
+  
+  let lastFullTankIdx = -1;
+  let runningFuelLevel = 100; // Starting assumption
+  let currentBlendFactor = car.currentCarbonFactor || 2.31;
+  
+  // Track updates in memory to avoid N+1 queries and excessive DB writes
+  const recordUpdates = records.map(r => ({ ...r }));
 
-    let distanceTraveled = 0;
-    let consumptionRate = null;
+  for (let i = 0; i < recordUpdates.length; i++) {
+    const current = recordUpdates[i];
+    const previous = i > 0 ? recordUpdates[i - 1] : null;
+    
+    current.distanceTraveled = previous ? current.odometer - previous.odometer : 0;
+    
+    // Calculate Carbon Emitted for this segment (based on blend in tank before refill)
+    const segmentConsumption = globalAvgConsumption || 10;
+    const fuelUsed = current.distanceTraveled / segmentConsumption;
+    current.carbonEmitted = fuelUsed * currentBlendFactor;
 
-    if (previous) {
-      distanceTraveled = current.odometer - previous.odometer;
-    }
+    // Update Blend Factor (Mixing)
+    const addedFactor = EMISSION_FACTORS[current.fuelType] || 2.31;
+    currentBlendFactor = calculateNewBlendFactor(
+      car.tankSize, 
+      runningFuelLevel, 
+      fuelUsed, 
+      current.litresRefueled, 
+      addedFactor, 
+      currentBlendFactor
+    );
 
-    if (current.isFullTank && previous) {
-      const lastFullTankIndex = records.slice(0, i).findLastIndex(r => r.isFullTank);
-      const lastFullTank = lastFullTankIndex !== -1 ? records[lastFullTankIndex] : null;
-
-      if (lastFullTank) {
-        const partialFills = records.slice(lastFullTankIndex + 1, i);
-        const totalPartialLitres = partialFills.reduce((sum, f) => sum + f.litresRefueled, 0);
-        const totalLitresConsumed = totalPartialLitres + current.litresRefueled;
-        const totalDistance = current.odometer - lastFullTank.odometer;
-
-        consumptionRate = totalDistance / totalLitresConsumed;
+    if (current.isFullTank) {
+      current.fuelLevel = 100;
+      if (lastFullTankIdx !== -1) {
+        const segmentRecords = recordUpdates.slice(lastFullTankIdx + 1, i + 1);
+        const segmentFuel = segmentRecords.reduce((sum, r) => sum + r.litresRefueled, 0);
+        const segmentDist = current.odometer - recordUpdates[lastFullTankIdx].odometer;
+        
+        if (segmentFuel > 0) {
+          const segmentAvg = segmentDist / segmentFuel;
+          for (let j = lastFullTankIdx + 1; j <= i; j++) {
+            recordUpdates[j].consumptionRate = segmentAvg;
+          }
+        }
+      }
+      lastFullTankIdx = i;
+      runningFuelLevel = 100;
+    } else {
+      current.consumptionRate = globalAvgConsumption;
+      if (car.tankSize > 0) {
+        const remainingAfterUsage = ((runningFuelLevel / 100) * car.tankSize) - fuelUsed;
+        const totalAfterRefill = remainingAfterUsage + current.litresRefueled;
+        current.fuelLevel = Math.min(100, Math.max(0, (totalAfterRefill / car.tankSize) * 100));
+        runningFuelLevel = current.fuelLevel;
+      } else {
+        current.fuelLevel = null;
       }
     }
-
-    await prisma.fuelRecord.update({
-      where: { id: current.id },
-      data: { distanceTraveled, consumptionRate }
-    });
   }
+
+  // Execute all updates in a single transaction
+  const transactionOperations = recordUpdates.map(update => 
+    prisma.fuelRecord.update({
+      where: { id: update.id },
+      data: {
+        distanceTraveled: update.distanceTraveled,
+        consumptionRate: update.consumptionRate,
+        fuelLevel: update.fuelLevel,
+        carbonEmitted: update.carbonEmitted,
+      }
+    })
+  );
+
+  transactionOperations.push(
+    prisma.car.update({
+      where: { id: carId },
+      data: { currentCarbonFactor: currentBlendFactor }
+    })
+  );
+
+  await prisma.$transaction(transactionOperations);
 };
 
 export const updateFuelRecord = async (req, res) => {
@@ -170,7 +257,7 @@ export const updateFuelRecord = async (req, res) => {
     const car = await findAccessibleCar(carId, req.user);
     if (!car) return res.status(404).json({ message: 'Car not found' });
 
-    const { fuelCost, pricePerLitre, odometer, isFullTank, date } = fuelRecordSchema.partial().parse(req.body);
+    const { fuelCost, pricePerLitre, odometer, isFullTank, fuelLevel, date } = fuelRecordSchema.partial().parse(req.body);
 
     const existingRecord = await prisma.fuelRecord.findUnique({ where: { id: recordId } });
     if (!existingRecord) return res.status(404).json({ message: 'Record not found' });
@@ -187,6 +274,7 @@ export const updateFuelRecord = async (req, res) => {
       pricePerLitre: existingRecord.pricePerLitre,
       odometer: existingRecord.odometer,
       isFullTank: existingRecord.isFullTank,
+      fuelLevel: existingRecord.fuelLevel,
       date: existingRecord.date
     };
 
@@ -204,7 +292,11 @@ export const updateFuelRecord = async (req, res) => {
     }
 
     if (odometer !== undefined) updateData.odometer = odometer;
-    if (isFullTank !== undefined) updateData.isFullTank = isFullTank;
+    if (isFullTank !== undefined) {
+      updateData.isFullTank = isFullTank;
+      if (isFullTank) updateData.fuelLevel = 100;
+    }
+    if (fuelLevel !== undefined) updateData.fuelLevel = fuelLevel;
     if (date !== undefined) updateData.date = new Date(date);
 
     await prisma.fuelRecord.update({
@@ -223,6 +315,7 @@ export const updateFuelRecord = async (req, res) => {
         pricePerLitre: updateData.pricePerLitre ?? beforeState.pricePerLitre,
         odometer: updateData.odometer ?? beforeState.odometer,
         isFullTank: updateData.isFullTank ?? beforeState.isFullTank,
+        fuelLevel: updateData.fuelLevel ?? beforeState.fuelLevel,
         date: updateData.date ?? beforeState.date
       }
     });

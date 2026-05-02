@@ -32,6 +32,15 @@ export const useVehicleStore = create((set, get) => ({
 
   setSelectedCar: (car) => set({ selectedCar: car }),
 
+  deleteCar: (carId) => {
+    const { cars, selectedCar } = get();
+    const updatedCars = cars.filter(c => c.id !== carId);
+    set({ 
+      cars: updatedCars,
+      selectedCar: selectedCar?.id === carId ? (updatedCars[0] || null) : selectedCar
+    });
+  },
+
   updateCarMaintenance: async (carId, category, serviceData) => {
     const { cars } = get();
     const car = cars.find(c => c.id === carId);

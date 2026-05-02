@@ -89,7 +89,7 @@ function Login() {
                 {...register('email')}
                 type="email"
                 placeholder="OPERATOR@LUXEFUEL.COM"
-                className="w-full bg-carbon border border-industrial-border rounded-sm px-4 py-3 text-white placeholder:text-slate-700 focus:outline-none focus:border-neon-violet focus:shadow-[0_0_15px_rgba(168,85,247,0.2)] transition-all duration-300 uppercase font-bold"
+                className="w-full bg-carbon border border-industrial-border rounded-sm px-4 py-3 text-text-primary placeholder:text-text-secondary focus:outline-none focus:border-neon-violet focus:shadow-[0_0_15px_rgba(168,85,247,0.2)] transition-all duration-300 uppercase font-bold"
               />
               {errors.email && <span className="text-turbo-orange text-[10px] font-bold uppercase tracking-widest ml-1">{errors.email.message}</span>}
             </div>
@@ -100,7 +100,7 @@ function Login() {
                 {...register('password')}
                 type="password"
                 placeholder="••••••••"
-                className="w-full bg-carbon border border-industrial-border rounded-sm px-4 py-3 text-white placeholder:text-slate-700 focus:outline-none focus:border-neon-violet focus:shadow-[0_0_15px_rgba(168,85,247,0.2)] transition-all duration-300 font-bold"
+                className="w-full bg-carbon border border-industrial-border rounded-sm px-4 py-3 text-text-primary placeholder:text-text-secondary focus:outline-none focus:border-neon-violet focus:shadow-[0_0_15px_rgba(168,85,247,0.2)] transition-all duration-300 font-bold"
               />
               {errors.password && <span className="text-turbo-orange text-[10px] font-bold uppercase tracking-widest ml-1">{errors.password.message}</span>}
             </div>

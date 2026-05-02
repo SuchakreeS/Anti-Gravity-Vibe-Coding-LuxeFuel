@@ -2,10 +2,13 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { useAuthStore } from '../store/useAuthStore';
 import { useCurrencyStore } from '../store/useCurrencyStore';
+import { useThemeStore } from '../store/useThemeStore';
+import { Sun, Moon } from 'lucide-react';
 
 function Navbar() {
   const { user, logout } = useAuthStore();
   const isAdmin = useAuthStore((state) => state.isAdmin);
+  const { theme, toggleTheme } = useThemeStore();
   const { 
     currency, 
     setCurrency, 
@@ -38,7 +41,16 @@ function Navbar() {
           </span>
         )}
       </div>
-      <div className="flex-none gap-4 items-center">
+      <div className="flex-none gap-2 items-center">
+        {/* Theme Toggle */}
+        <button 
+          onClick={toggleTheme}
+          className="btn btn-ghost btn-sm btn-circle text-text-secondary hover:text-neon-violet transition-colors"
+          title="Toggle Theme"
+        >
+          {theme === 'midnight_jdm' ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
+        </button>
+
         {/* Currency Selector */}
         <div className="dropdown dropdown-end">
           <label tabIndex={0} className="btn btn-ghost btn-sm gap-2">
@@ -79,6 +91,7 @@ function Navbar() {
           </label>
           <ul tabIndex={0} className="dropdown-content menu p-2 shadow-2xl bg-carbon border border-industrial-border rounded-box w-48 z-[110]">
             <li><Link to="/" className="hover:bg-jdm-purple hover:text-white transition-all">📊 Dashboard</Link></li>
+            <li><Link to="/maintenance" className="hover:bg-jdm-purple hover:text-white transition-all">🛠️ Maintenance</Link></li>
             <li><Link to="/mileage-log" className="hover:bg-jdm-purple hover:text-white transition-all">📋 Mileage Log</Link></li>
             <li><Link to="/profile" className="hover:bg-jdm-purple hover:text-white transition-all">👤 Profile</Link></li>
             {isAdmin() && (
