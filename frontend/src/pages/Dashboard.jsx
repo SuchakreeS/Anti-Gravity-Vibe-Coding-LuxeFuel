@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
-import { Plus } from 'lucide-react';
+import { Plus, FileDown } from 'lucide-react';
 import { useAuthStore } from '../store/useAuthStore';
 import { useCars } from '../hooks/useCars';
 import { useFuelRecords } from '../hooks/useFuelRecords';
@@ -14,6 +14,8 @@ import OperatorRankCard from '../components/dashboard/OperatorRankCard';
 import PriceTicker from '../components/dashboard/PriceTicker';
 import { useVehicleStore } from '../store/useVehicleStore';
 import PremiumGuard from '../components/PremiumGuard';
+import { ASSETS } from '../utils/assets';
+import { generateFuelReport } from '../utils/reportGenerator';
 
 function Dashboard() {
   const { user } = useAuthStore();
@@ -103,16 +105,23 @@ function Dashboard() {
                 {cars.map(c => (
                   <button
                     key={c.id}
-                    className={`w-full text-left p-3 rounded-sm transition-all border ${
+                    className={`w-full text-left p-3 rounded-sm transition-all border flex items-center gap-3 ${
                       selectedCar?.id === c.id 
                         ? 'bg-secondary text-secondary-content border-secondary shadow-neon' 
                         : 'bg-base-200 hover:bg-base-300 border-industrial-border text-text-primary'
                     }`}
                     onClick={() => setSelectedCar(c)}
                   >
-                    <div className="font-bold uppercase italic text-sm">{c.name}</div>
-                    <div className={`text-[10px] uppercase font-black ${selectedCar?.id === c.id ? 'opacity-80' : 'opacity-40'}`}>
-                      {c.brand} {c.model} {c.licensePlate ? `• ${c.licensePlate}` : ''}
+                    <img 
+                      src={c.photoUrl || ASSETS.DEFAULT_CAR} 
+                      alt={c.name} 
+                      className="w-10 h-10 rounded-sm object-cover border border-industrial-border" 
+                    />
+                    <div>
+                      <div className="font-bold uppercase italic text-sm">{c.name}</div>
+                      <div className={`text-[10px] uppercase font-black ${selectedCar?.id === c.id ? 'opacity-80' : 'opacity-40'}`}>
+                        {c.brand} {c.model} {c.licensePlate ? `• ${c.licensePlate}` : ''}
+                      </div>
                     </div>
                   </button>
                 ))}
@@ -142,7 +151,16 @@ function Dashboard() {
           )}
 
           {selectedCar && stats && (
-             <DashboardStats stats={stats} />
+             <>
+               <DashboardStats stats={stats} />
+               <button 
+                 onClick={() => generateFuelReport(selectedCar, records, stats)}
+                 className="btn btn-outline btn-accent w-full mt-4 flex items-center justify-center gap-2 uppercase font-black italic tracking-widest text-xs border-2 shadow-neon hover:bg-accent hover:text-black transition-all duration-300"
+               >
+                 <FileDown className="w-4 h-4" />
+                 Export Telemetry PDF
+               </button>
+             </>
           )}
 
           {selectedCar && (

@@ -106,6 +106,7 @@ export function useFuelRecords(selectedCarId) {
     }
 
     const totalSpentTHB = records.reduce((sum, r) => sum + (r.fuelCost || 0), 0);
+    const totalLiters = records.reduce((sum, r) => sum + (r.litresRefueled || 0), 0);
     const totalDistance = records.reduce((sum, r) => sum + (r.distanceTraveled || 0), 0);
     
     const totalSpent = convert(totalSpentTHB);
@@ -117,7 +118,10 @@ export function useFuelRecords(selectedCarId) {
       fullTankCount: fullTankRecords.length,
       comparison,
       totalSpent,
-      avgCostPerKm
+      totalLiters,
+      totalDistance,
+      avgCostPerKm,
+      currency
     };
   }, [records, convert, currency]);
 

@@ -1,5 +1,6 @@
 import React from 'react';
 import { motion } from 'framer-motion';
+import { ASSETS } from '../../utils/assets';
 
 function FleetTab({
   orgCars,
@@ -8,7 +9,8 @@ function FleetTab({
   isManualEntry, setIsManualEntry,
   makes, models, loadingModels,
   fetchModels,
-  handleAddCar
+  handleAddCar,
+  editingCar, openEditCar, handleUpdateCar, handleDeleteCar, setEditingCar
 }) {
   return (
     <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="card bg-base-100 shadow-xl">
@@ -107,21 +109,66 @@ function FleetTab({
             <div className="text-center opacity-50 py-8">No fleet cars yet. Add your first car above!</div>
           ) : (
             orgCars.map(car => (
-              <div key={car.id} className="p-4 bg-base-200 rounded-xl flex justify-between items-center">
-                <div>
-                  <div className="font-bold text-lg">{car.name}</div>
-                  <div className="opacity-70">{car.brand} {car.model}</div>
-                  <div className="flex flex-wrap gap-3 mt-1">
-                    {car.licensePlate && (
-                      <span className="badge badge-outline badge-sm">🔖 {car.licensePlate}</span>
-                    )}
-                    {car.tankSize > 0 && (
-                      <span className="badge badge-outline badge-sm">🛢️ {car.tankSize}L</span>
-                    )}
-                    {car.otherSpecs && <span className="text-sm opacity-50">{car.otherSpecs}</span>}
+              <div key={car.id} className="p-4 bg-base-200 rounded-xl">
+                {editingCar?.id === car.id ? (
+                  <form onSubmit={handleUpdateCar} className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <div className="form-control">
+                      <label className="label py-1"><span className="label-text text-xs opacity-50">Name</span></label>
+                      <input required placeholder="Name" className="input input-sm input-bordered" value={carForm.name} onChange={e => setCarForm({ ...carForm, name: e.target.value })} />
+                    </div>
+                    <div className="form-control">
+                      <label className="label py-1"><span className="label-text text-xs opacity-50">Brand</span></label>
+                      <input required placeholder="Brand" className="input input-sm input-bordered" value={carForm.brand} onChange={e => setCarForm({ ...carForm, brand: e.target.value })} />
+                    </div>
+                    <div className="form-control">
+                      <label className="label py-1"><span className="label-text text-xs opacity-50">Model</span></label>
+                      <input required placeholder="Model" className="input input-sm input-bordered" value={carForm.model} onChange={e => setCarForm({ ...carForm, model: e.target.value })} />
+                    </div>
+                    <div className="form-control">
+                      <label className="label py-1"><span className="label-text text-xs opacity-50">License Plate</span></label>
+                      <input placeholder="License Plate" className="input input-sm input-bordered" value={carForm.licensePlate} onChange={e => setCarForm({ ...carForm, licensePlate: e.target.value })} />
+                    </div>
+                    <div className="form-control">
+                      <label className="label py-1"><span className="label-text text-xs opacity-50">Tank Size (L)</span></label>
+                      <input type="number" placeholder="Tank Size" className="input input-sm input-bordered" value={carForm.tankSize} onChange={e => setCarForm({ ...carForm, tankSize: parseFloat(e.target.value) || 0 })} />
+                    </div>
+                    <div className="form-control">
+                      <label className="label py-1"><span className="label-text text-xs opacity-50">Other Specs</span></label>
+                      <input placeholder="Other Specs" className="input input-sm input-bordered" value={carForm.otherSpecs} onChange={e => setCarForm({ ...carForm, otherSpecs: e.target.value })} />
+                    </div>
+                    <div className="md:col-span-2 flex gap-2 mt-2">
+                      <button type="submit" className="btn btn-primary btn-sm">Save</button>
+                      <button type="button" className="btn btn-ghost btn-sm" onClick={() => setEditingCar(null)}>Cancel</button>
+                    </div>
+                  </form>
+                ) : (
+                  <div className="flex justify-between items-center">
+                    <div className="flex items-center gap-4">
+                      <img 
+                        src={car.photoUrl || ASSETS.DEFAULT_CAR} 
+                        alt={car.name} 
+                        className="w-12 h-12 rounded-md object-cover border border-base-300" 
+                      />
+                      <div>
+                        <div className="font-bold text-lg">{car.name}</div>
+                        <div className="opacity-70">{car.brand} {car.model}</div>
+                        <div className="flex flex-wrap gap-3 mt-1">
+                          {car.licensePlate && (
+                            <span className="badge badge-outline badge-sm">🔖 {car.licensePlate}</span>
+                          )}
+                          {car.tankSize > 0 && (
+                            <span className="badge badge-outline badge-sm">🛢️ {car.tankSize}L</span>
+                          )}
+                          {car.otherSpecs && <span className="text-sm opacity-50">{car.otherSpecs}</span>}
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex gap-2">
+                      <button className="btn btn-xs btn-outline btn-info" onClick={() => openEditCar(car)}>Edit</button>
+                      <button className="btn btn-xs btn-outline btn-error" onClick={() => handleDeleteCar(car.id)}>Delete</button>
+                    </div>
                   </div>
-                </div>
-                <span className="badge badge-ghost">Org Fleet</span>
+                )}
               </div>
             ))
           )}

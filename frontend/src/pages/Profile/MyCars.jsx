@@ -1,5 +1,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
+import CyberUploader from '../../components/CyberUploader';
+import { uploadCarPhoto } from '../../utils/upload';
 
 function MyCars({ 
   isOrgUser, isAdmin, isOrgMember, 
@@ -10,8 +12,13 @@ function MyCars({
   isManualEntry, setIsManualEntry,
   fetchModels, makes, models, loadingModels,
   editingCar, openEditCar, handleUpdateCar, handleDeleteCar,
-  carForm, setCarForm 
+  carForm, setCarForm, setEditingCar
 }) {
+  const handleImageUpload = async (carId, file) => {
+    const url = await uploadCarPhoto(carId, file);
+    setCarForm({ ...carForm, photoUrl: url });
+  };
+
   return (
     <motion.div initial={{ y: -20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ delay: 0.2 }} className="card bg-base-100 shadow-xl">
       <div className="card-body">
@@ -175,25 +182,35 @@ function MyCars({
                     <label className="label py-1"><span className="label-text text-xs opacity-50">Other Specs</span></label>
                     <input placeholder="Other Specs" className="input input-sm input-bordered" value={carForm.otherSpecs} onChange={e => setCarForm({ ...carForm, otherSpecs: e.target.value })} />
                   </div>
-                  <div className="md:col-span-2 flex gap-2 mt-2">
-                    <button type="submit" className="btn btn-primary btn-sm">Save</button>
-                    <button type="button" className="btn btn-ghost btn-sm" onClick={() => setEditingCar(null)}>Cancel</button>
+                  <div className="md:col-span-2 flex flex-col items-center gap-3 mt-2">
+                    <CyberUploader onUpload={(file) => handleImageUpload(car.id, file)} currentUrl={carForm.photoUrl} />
+                    <div className="flex gap-2">
+                      <button type="submit" className="btn btn-primary btn-sm">Save</button>
+                      <button type="button" className="btn btn-ghost btn-sm" onClick={() => setEditingCar(null)}>Cancel</button>
+                    </div>
                   </div>
                 </form>
               ) : (
                 <div className="flex justify-between items-center">
-                  <div>
-                    <div className="font-bold text-lg flex items-center gap-2">
-                      {car.name}
-                      {car.isPersonal && isOrgMember() && (
-                        <span className="badge badge-xs badge-ghost">Personal</span>
-                      )}
-                    </div>
-                    <div className="opacity-70">{car.brand} {car.model}</div>
-                    <div className="flex flex-wrap gap-2 mt-1">
-                      {car.licensePlate && <span className="badge badge-outline badge-sm">🔖 {car.licensePlate}</span>}
-                      {car.tankSize > 0 && <span className="badge badge-outline badge-sm">🛢️ {car.tankSize}L</span>}
-                      {car.otherSpecs && <span className="text-sm opacity-50">{car.otherSpecs}</span>}
+                  <div className="flex items-center gap-4">
+                    <img 
+                      src={car.photoUrl || ASSETS.DEFAULT_CAR} 
+                      alt={car.name} 
+                      className="w-16 h-16 rounded-md object-cover border border-industrial-border" 
+                    />
+                    <div>
+                      <div className="font-bold text-lg flex items-center gap-2">
+                        {car.name}
+                        {car.isPersonal && isOrgMember() && (
+                          <span className="badge badge-xs badge-ghost">Personal</span>
+                        )}
+                      </div>
+                      <div className="opacity-70">{car.brand} {car.model}</div>
+                      <div className="flex flex-wrap gap-2 mt-1">
+                        {car.licensePlate && <span className="badge badge-outline badge-sm">🔖 {car.licensePlate}</span>}
+                        {car.tankSize > 0 && <span className="badge badge-outline badge-sm">🛢️ {car.tankSize}L</span>}
+                        {car.otherSpecs && <span className="text-sm opacity-50">{car.otherSpecs}</span>}
+                      </div>
                     </div>
                   </div>
                   <div className="flex gap-2">

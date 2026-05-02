@@ -1,12 +1,29 @@
 import prisma from '../prismaClient.js';
 import { z } from 'zod';
 import axios from 'axios';
+import multer from 'multer';
+import { uploadToCloudinary } from '../utils/cloudinary.js';
+
+const upload = multer({ storage: multer.memoryStorage() });
+
+export const uploadCarPhotoHandler = upload.single('image');
+
+export const uploadCarPhoto = async (req, res) => {
+  try {
+    if (!req.file) return res.status(400).json({ message: 'No file uploaded' });
+    const url = await uploadToCloudinary(req.file.buffer);
+    res.json({ url });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
 
 const carSchema = z.object({
   name: z.string().min(1),
   brand: z.string().min(1),
   model: z.string().min(1),
   licensePlate: z.string().nullable().optional(),
+  photoUrl: z.string().nullable().optional(),
   tankSize: z.number().nonnegative().nullable().optional(),
   otherSpecs: z.string().nullable().optional(),
   maintenanceData: z.string().nullable().optional(),
@@ -53,6 +70,7 @@ export const createCar = async (req, res) => {
       brand: data.brand,
       model: data.model,
       licensePlate: data.licensePlate || null,
+      photoUrl: data.photoUrl || null,
       tankSize: data.tankSize,
       otherSpecs: data.otherSpecs || null,
       maintenanceData: data.maintenanceData || null,
@@ -157,6 +175,7 @@ export const updateCar = async (req, res) => {
         brand: data.brand,
         model: data.model,
         licensePlate: data.licensePlate || existing.licensePlate,
+        photoUrl: data.photoUrl || existing.photoUrl,
         tankSize: data.tankSize ?? existing.tankSize,
         otherSpecs: data.otherSpecs || null,
         maintenanceData: data.maintenanceData || existing.maintenanceData,

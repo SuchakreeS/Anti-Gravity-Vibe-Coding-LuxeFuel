@@ -1,10 +1,19 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
+import CyberUploader from '../../../components/CyberUploader';
+import { uploadCarPhoto } from '../../../utils/upload';
 
 function AddCarModal({ onAddCar, makes, models, fetchModels, loadingMakes, loadingModels, userRole = 'individual' }) {
-  const [newCarForm, setNewCarForm] = useState({ name: '', brand: '', model: '', licensePlate: '', tankSize: '', otherSpecs: '' });
+  const [newCarForm, setNewCarForm] = useState({ name: '', brand: '', model: '', licensePlate: '', tankSize: '', otherSpecs: '', photoUrl: '' });
   const [isManualEntry, setIsManualEntry] = useState(false);
   const [useOwnCar, setUseOwnCar] = useState(userRole === 'user' || userRole === 'USER' || userRole === 'DRIVER');
+
+  const handleImageUpload = async (file) => {
+    // We pass a temporary ID for the photo upload or handle it after creation if needed
+    // For now, we upload immediately and store the URL
+    const url = await uploadCarPhoto('temp', file); // Adjust to get actual carId if possible or handle on backend
+    setNewCarForm(prev => ({ ...prev, photoUrl: url }));
+  };
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -62,6 +71,9 @@ function AddCarModal({ onAddCar, makes, models, fetchModels, loadingMakes, loadi
           )}
 
           <form onSubmit={handleSubmit} className="flex flex-col gap-5">
+            <div className="flex justify-center mb-2">
+              <CyberUploader onUpload={handleImageUpload} />
+            </div>
             <div className="space-y-1">
               <label className="text-[10px] font-black uppercase tracking-widest text-text-secondary ml-1">Vehicle Callsign (Name)</label>
               <input 

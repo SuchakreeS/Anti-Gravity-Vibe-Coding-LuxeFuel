@@ -21,23 +21,62 @@ function AdminPanel() {
     fetchOrganization, fetchMembers, addMember, removeMember, fetchAuditLogs
   } = useOrganization();
   const { 
-    cars, orgCars, addCar, makes, models, loadingMakes, loadingModels, fetchMakes, fetchModels 
+    cars, orgCars, addCar, updateCar, deleteCar, makes, models, loadingMakes, loadingModels, fetchMakes, fetchModels 
   } = useCars(user);
 
   const [activeTab, setActiveTab] = useState('members');
-  
+  const [editingCar, setEditingCar] = useState(null);
+
   // Member form
   const [showMemberForm, setShowMemberForm] = useState(false);
   const [memberForm, setMemberForm] = useState({ name: '', email: '', password: '' });
-  
+
   // Car form
   const [showCarForm, setShowCarForm] = useState(false);
-  const [carForm, setCarForm] = useState({ name: '', brand: '', model: '', licensePlate: '', otherSpecs: '' });
+  const [carForm, setCarForm] = useState({ name: '', brand: '', model: '', licensePlate: '', tankSize: '', otherSpecs: '' });
   const [isManualEntry, setIsManualEntry] = useState(false);
-  
+
   // Audit filters
   const [auditFilters, setAuditFilters] = useState({ userId: '', entityType: '', from: '', to: '' });
   const [auditPage, setAuditPage] = useState(1);
+
+  const openEditCar = (car) => {
+    setEditingCar(car);
+    setCarForm({ 
+      name: car.name, 
+      brand: car.brand, 
+      model: car.model, 
+      licensePlate: car.licensePlate || '', 
+      tankSize: car.tankSize || '',
+      otherSpecs: car.otherSpecs || '' 
+    });
+  };
+
+  const handleUpdateCar = async (e) => {
+    e.preventDefault();
+    try {
+      const payload = { 
+        ...carForm, 
+        tankSize: carForm.tankSize ? parseFloat(carForm.tankSize) : null 
+      };
+      await updateCar(editingCar.id, payload);
+      setEditingCar(null);
+      setCarForm({ name: '', brand: '', model: '', licensePlate: '', tankSize: '', otherSpecs: '' });
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const handleDeleteCar = async (carId) => {
+    const confirmed = await cyberToast.confirm('This will permanently delete the car and ALL its fuel records. Continue?');
+    if (confirmed) {
+      try {
+        await deleteCar(carId);
+      } catch (err) {
+        console.error(err);
+      }
+    }
+  };
 
   useEffect(() => {
     fetchOrganization();
@@ -174,6 +213,11 @@ function AdminPanel() {
             loadingModels={loadingModels}
             fetchModels={fetchModels}
             handleAddCar={handleAddCar}
+            editingCar={editingCar}
+            openEditCar={openEditCar}
+            handleUpdateCar={handleUpdateCar}
+            handleDeleteCar={handleDeleteCar}
+            setEditingCar={setEditingCar}
           />
         )}
 

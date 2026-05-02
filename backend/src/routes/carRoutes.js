@@ -11,6 +11,7 @@ router.get('/makes', carController.getProxyMakes);
 router.get('/models', carController.getProxyModels);
 
 router.post('/', carController.createCar);
+router.post('/:id/photo', carController.uploadCarPhotoHandler, carController.uploadCarPhoto);
 router.get('/', carController.getCars);
 router.get('/:id', carController.getCar);
 router.put('/:id', carController.updateCar);

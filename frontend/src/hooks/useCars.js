@@ -63,6 +63,29 @@ export function useCars(user) {
     }
   }, []);
 
+  const updateCar = useCallback(async (carId, carData) => {
+    try {
+      const res = await api.put(`/cars/${carId}`, carData);
+      setCars(prev => prev.map(c => c.id === carId ? res.data : c));
+      cyberToast.success('Vehicle Updated // Config Saved');
+      return res.data;
+    } catch (err) {
+      cyberToast.error(err.response?.data?.message || 'Failed to update car');
+      throw err;
+    }
+  }, []);
+
+  const deleteCar = useCallback(async (carId) => {
+    try {
+      await api.delete(`/cars/${carId}`);
+      setCars(prev => prev.filter(c => c.id !== carId));
+      cyberToast.warning('Vehicle Purged // Records Cleared');
+    } catch (err) {
+      cyberToast.error(err.response?.data?.message || 'Failed to delete car');
+      throw err;
+    }
+  }, []);
+
   useEffect(() => {
     if (user) {
       fetchCars();
@@ -88,6 +111,8 @@ export function useCars(user) {
     fetchCars,
     fetchMakes,
     fetchModels,
-    addCar
+    addCar,
+    updateCar,
+    deleteCar
   };
 }
