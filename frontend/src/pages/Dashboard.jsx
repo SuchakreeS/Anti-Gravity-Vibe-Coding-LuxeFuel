@@ -15,6 +15,7 @@ import OperatorRankCard from '../components/dashboard/OperatorRankCard';
 import PriceTicker from '../components/dashboard/PriceTicker';
 import { useVehicleStore } from '../store/useVehicleStore';
 import PremiumGuard from '../components/PremiumGuard';
+import EmptyState from '../components/dashboard/EmptyState';
 import { ASSETS } from '../utils/assets';
 import { generateFuelReport } from '../utils/reportGenerator';
 
@@ -189,8 +190,8 @@ function Dashboard() {
 
         {/* Main Content Area — Charts */}
         {!selectedCar ? (
-          <div className="lg:col-span-2 flex h-[500px] items-center justify-center opacity-50 text-xl text-center font-['Rajdhani'] font-black uppercase italic tracking-tighter">
-            Select or initialize a vehicle to access telemetry.
+          <div className="lg:col-span-2 flex">
+            <EmptyState message="Select or initialize a vehicle to access telemetry" height="h-[500px]" />
           </div>
         ) : (
           <div className="lg:col-span-2 flex flex-col gap-6">

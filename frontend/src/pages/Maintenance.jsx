@@ -8,6 +8,7 @@ import MaintenanceCard from '../components/dashboard/MaintenanceCard';
 import ServiceTimeline from '../components/dashboard/ServiceTimeline';
 import MaintenanceForm from '../components/MaintenanceForm';
 import PremiumGuard from '../components/PremiumGuard';
+import EmptyState from '../components/dashboard/EmptyState';
 import { estimateCurrentMileage } from '../utils/maintenance';
 
 function Maintenance() {
@@ -75,9 +76,7 @@ function Maintenance() {
           {/* Main: Timeline */}
           <div className="lg:col-span-2">
             {!selectedCar ? (
-              <div className="h-64 flex items-center justify-center bg-carbon border border-industrial-border border-dashed opacity-50 rounded-sm">
-                <p className="font-black uppercase tracking-widest italic">Initialize vehicle selection to view telemetry</p>
-              </div>
+              <EmptyState message="Initialize vehicle selection to view telemetry" height="h-64" />
             ) : (
               <motion.div
                 initial={{ opacity: 0, x: 20 }}

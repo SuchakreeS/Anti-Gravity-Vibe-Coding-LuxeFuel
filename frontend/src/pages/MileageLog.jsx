@@ -1,52 +1,51 @@
 import React, { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useAuthStore } from '../store/useAuthStore';
 import { useCurrencyStore } from '../store/useCurrencyStore';
-import { useCars } from '../hooks/useCars';
+import { useVehicleStore } from '../store/useVehicleStore';
 import { useFuelRecords } from '../hooks/useFuelRecords';
 import Layout from '../components/Layout';
 import { cyberToast } from '../components/CyberToast';
+import EditFuelRecordModal from './MileageLog/components/EditFuelRecordModal';
 
 function MileageLog() {
   const { user } = useAuthStore();
   const isOrgUser = useAuthStore((state) => state.isOrgUser);
   const canExportPDF = useAuthStore((state) => state.canExportPDF);
   const { convert, formatPrice } = useCurrencyStore();
-  const { cars, orgCars, personalCars, selectedCar, setSelectedCar } = useCars(user);
+  const { cars, selectedCar, setSelectedCar, fetchCars } = useVehicleStore();
+  const safeCars = Array.isArray(cars) ? cars : [];
+  const orgCars = safeCars.filter(c => !c.isPersonal);
+  const personalCars = safeCars.filter(c => c.isPersonal);
+
+  useEffect(() => {
+    if (cars.length === 0 && user) {
+      fetchCars();
+    }
+  }, [cars.length, user, fetchCars]);
+
   const { records, updateRecord, deleteRecord } = useFuelRecords(selectedCar?.id);
 
   const [editingRecord, setEditingRecord] = useState(null);
   const [editFormData, setEditFormData] = useState({ fuelCost: '', pricePerLitre: '', odometer: '', isFullTank: true, date: '' });
 
-  const openEditModal = (record) => {
-    setEditingRecord(record);
-    setEditFormData({
-      fuelCost: convert(record.fuelCost)?.toFixed(2) || record.fuelCost,
-      pricePerLitre: convert(record.pricePerLitre)?.toFixed(2) || record.pricePerLitre,
-      odometer: record.odometer,
-      isFullTank: record.isFullTank,
-      date: new Date(record.date).toISOString().slice(0, 16)
-    });
-    document.getElementById('edit_modal').showModal();
-  };
-
-  const handleUpdateRecord = async (e) => {
-    e.preventDefault();
+  const handleUpdateRecord = async (payloadData) => {
     if (!editingRecord || !selectedCar) return;
     
     const rate = convert(1);
     const toTHB = (val) => rate ? val / rate : val;
 
     const payload = {
-      fuelCost: toTHB(parseFloat(editFormData.fuelCost)),
-      pricePerLitre: toTHB(parseFloat(editFormData.pricePerLitre)),
-      odometer: parseFloat(editFormData.odometer),
-      isFullTank: editFormData.isFullTank,
-      date: editFormData.date
+      fuelCost: toTHB(payloadData.fuelCost),
+      odometer: payloadData.odometer,
+      isFullTank: payloadData.isFullTank,
+      date: payloadData.date
     };
+    
+    if (payloadData.pricePerLitre !== undefined) payload.pricePerLitre = toTHB(payloadData.pricePerLitre);
+    if (payloadData.pricePerKwh !== undefined) payload.pricePerKwh = toTHB(payloadData.pricePerKwh);
 
     await updateRecord(selectedCar.id, editingRecord.id, payload);
-    document.getElementById('edit_modal').close();
     setEditingRecord(null);
   };
 
@@ -72,12 +71,12 @@ function MileageLog() {
     <Layout>
       <div className="max-w-5xl mx-auto">
         {/* Car Selector */}
-        <motion.div initial={{ y: -20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} className="card bg-base-100 shadow-xl mb-6">
+        <motion.div initial={{ y: -20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} className="card bg-carbon border border-industrial-border shadow-2xl mb-6">
           <div className="card-body py-4">
             <div className="flex flex-col sm:flex-row sm:items-center gap-4">
-              <h2 className="font-bold text-lg whitespace-nowrap text-secondary">Select Car</h2>
+              <h2 className="text-xs uppercase font-black tracking-widest text-emerald-500 whitespace-nowrap">Target Vehicle</h2>
               <select
-                className="select select-bordered w-full sm:flex-1"
+                className="bg-asphalt border border-industrial-border rounded-sm px-4 py-3 text-white focus:outline-none focus:border-neon-violet transition-all duration-300 uppercase font-bold text-xs w-full sm:flex-1"
                 value={selectedCar?.id || ''}
                 onChange={(e) => setSelectedCar(cars.find(c => c.id === parseInt(e.target.value)))}
               >
@@ -101,15 +100,22 @@ function MileageLog() {
         </motion.div>
 
         {/* Mileage Log */}
-        <motion.div initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ delay: 0.1 }} className="card bg-base-100 shadow-xl">
+        <motion.div initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ delay: 0.1 }} className="card bg-carbon border border-industrial-border shadow-2xl">
           <div className="card-body">
-            <h2 className="card-title text-2xl border-b border-base-300 pb-2 flex justify-between items-center w-full">
+            <h2 className="card-title border-b border-industrial-border pb-4 mb-4 flex justify-between items-center w-full">
               <div>
-                📋 Mileage Log {selectedCar && <span className="text-base opacity-50 font-normal">— {selectedCar.name}</span>}
+                <span className="text-text-secondary text-xs uppercase tracking-widest block mb-1">Telemetry History</span>
+                <span className="text-3xl font-black italic uppercase text-white tracking-tighter">
+                  Mileage Log {selectedCar && <span className="text-emerald-500">— {selectedCar.name}</span>}
+                </span>
               </div>
               <button 
                 disabled={!canExportPDF()}
-                className={`btn btn-sm ${canExportPDF() ? 'btn-primary' : 'btn-ghost opacity-50 cursor-not-allowed'}`}
+                className={`px-4 py-2 rounded-sm text-xs font-black uppercase tracking-widest transition-all duration-300 border-2 ${
+                  canExportPDF() 
+                    ? 'border-neon-violet text-neon-violet hover:bg-neon-violet hover:text-asphalt shadow-neon' 
+                    : 'border-industrial-border text-text-secondary opacity-50 cursor-not-allowed'
+                }`}
                 onClick={() => cyberToast.info('Exporting PDF...')}
               >
                 {canExportPDF() ? '📄 Export PDF' : '🔒 Export PDF (PRO)'}
@@ -117,89 +123,86 @@ function MileageLog() {
             </h2>
             <div className="flex flex-col gap-4 mt-2">
               {!selectedCar ? (
-                <div className="opacity-50 text-center py-8">Please select a car to view its mileage log.</div>
+                <div className="h-64 flex items-center justify-center bg-carbon border border-industrial-border border-dashed opacity-50 rounded-sm">
+                  <p className="font-black uppercase tracking-widest italic">Initialize vehicle selection to view telemetry</p>
+                </div>
               ) : records.length === 0 ? (
-                <div className="opacity-50 text-center py-8">No logs generated yet.</div>
+                <div className="h-64 flex items-center justify-center bg-carbon border border-industrial-border border-dashed opacity-50 rounded-sm">
+                  <p className="font-black uppercase tracking-widest italic">No logs generated yet</p>
+                </div>
               ) : (
-                [...records].reverse().map(record => (
-                  <div key={record.id} className="p-4 bg-base-200 rounded-xl relative group">
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <div className="font-bold opacity-80">{record.displayDate}</div>
-                        <div className="text-xl font-bold mt-1 text-primary">{formatPrice(record.fuelCost)}</div>
-                        <div className="opacity-70 mt-1 flex gap-2 items-center">
-                          <span>💧 {record.litresRefueled.toFixed(2)} L</span>
-                          <span>→</span>
-                          <span>{formatPrice(record.pricePerLitre)} / L</span>
-                        </div>
-                        <div className="mt-2 text-secondary font-medium">
-                          {record.isFullTank && record.consumptionRate !== null
-                            ? `📈 ${record.consumptionRate.toFixed(2)} km/L`
-                            : `〰️ Partially Filled`}
-                        </div>
-                        {/* Submitter info */}
-                        {record.submittedBy && (
-                          <div className="mt-1 text-xs opacity-40">
-                            Submitted by {record.submittedBy.name}
+                [...records].reverse().map(record => {
+                  const isEV = record.fuelType === 'ELECTRICITY';
+                  return (
+                    <div key={record.id} className="p-5 bg-asphalt border border-industrial-border rounded-sm relative group hover:border-neon-violet/50 transition-colors">
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <div className="text-[10px] font-black uppercase tracking-widest text-text-secondary">{record.displayDate}</div>
+                          <div className="text-2xl font-black italic text-white mt-1 tracking-tighter">{formatPrice(record.fuelCost)}</div>
+                          <div className="text-xs uppercase font-bold text-text-secondary mt-1 flex gap-2 items-center">
+                            {isEV ? (
+                              <>
+                                <span className="text-emerald-500">⚡ {(record.kwhAdded || 0).toFixed(2)} kWh</span>
+                                <span>//</span>
+                                <span>{formatPrice(record.pricePerKwh)} / kWh</span>
+                              </>
+                            ) : (
+                              <>
+                                <span className="text-emerald-500">💧 {(record.litresRefueled || 0).toFixed(2)} L</span>
+                                <span>//</span>
+                                <span>{formatPrice(record.pricePerLitre)} / L</span>
+                              </>
+                            )}
                           </div>
-                        )}
-                      </div>
-                      <div className="text-right">
-                        <div className="font-bold text-lg">{record.odometer} km</div>
-                        {record.distanceTraveled > 0 && <div className="text-sm opacity-60">+{record.distanceTraveled} km</div>}
+                          <div className="mt-3 text-xs uppercase font-black tracking-widest">
+                            {record.isFullTank && record.consumptionRate !== null
+                              ? <span className="text-neon-violet">📈 {record.consumptionRate.toFixed(2)} {isEV ? 'km/kWh' : 'km/L'}</span>
+                              : <span className="text-text-secondary">〰️ Partially Filled</span>}
+                          </div>
+                          {record.submittedBy && (
+                            <div className="mt-2 text-[9px] uppercase font-bold text-text-secondary tracking-widest">
+                              Operator: {record.submittedBy.name}
+                            </div>
+                          )}
+                        </div>
+                        <div className="text-right">
+                          <div className="font-black italic text-xl text-white tracking-tighter">{record.odometer} km</div>
+                          {record.distanceTraveled > 0 && <div className="text-xs font-bold text-emerald-500 uppercase tracking-widest">+{record.distanceTraveled} km</div>}
 
-                        <div className="flex gap-2 justify-end mt-4">
-                          {canEditRecord(record) && (
-                            <button onClick={() => openEditModal(record)} className="btn btn-xs btn-outline btn-info">Edit</button>
-                          )}
-                          {canDeleteRecord() && (
-                            <button onClick={() => handleDelete(record.id)} className="btn btn-xs btn-outline btn-error">Delete</button>
-                          )}
+                          <div className="flex gap-2 justify-end mt-4">
+                            {canEditRecord(record) && (
+                              <button onClick={() => setEditingRecord(record)} className="px-3 py-1.5 border border-industrial-border text-[10px] uppercase font-black tracking-widest text-text-secondary hover:text-white hover:border-neon-violet transition-colors rounded-sm">
+                                Edit
+                              </button>
+                            )}
+                            {canDeleteRecord() && (
+                              <button onClick={() => handleDelete(record.id)} className="px-3 py-1.5 border border-industrial-border text-[10px] uppercase font-black tracking-widest text-text-secondary hover:text-red-500 hover:border-red-500 transition-colors rounded-sm">
+                                Purge
+                              </button>
+                            )}
+                          </div>
                         </div>
                       </div>
                     </div>
-                  </div>
-                ))
+                  );
+                })
               )}
             </div>
           </div>
         </motion.div>
       </div>
 
-      {/* Edit Modal */}
-      <dialog id="edit_modal" className="modal">
-        <div className="modal-box">
-          <h3 className="font-bold text-xl text-secondary">Edit Fuel Record</h3>
-          {editingRecord && (
-            <form onSubmit={handleUpdateRecord} className="flex flex-col gap-3 mt-4">
-              <label className="text-sm opacity-70">Price of Gas</label>
-              <input required type="number" step="0.01" className="input input-sm input-bordered" value={editFormData.fuelCost} onChange={e => setEditFormData({ ...editFormData, fuelCost: e.target.value })} />
-
-              <label className="text-sm opacity-70">Gas Price per Litre</label>
-              <input required type="number" step="0.01" className="input input-sm input-bordered" value={editFormData.pricePerLitre} onChange={e => setEditFormData({ ...editFormData, pricePerLitre: e.target.value })} />
-
-              <label className="text-sm opacity-70">Odometer (km)</label>
-              <input required type="number" step="0.1" className="input input-sm input-bordered" value={editFormData.odometer} onChange={e => setEditFormData({ ...editFormData, odometer: e.target.value })} />
-
-              <label className="text-sm opacity-70 mt-2">Date & Time</label>
-              <input required type="datetime-local" className="input input-sm input-bordered" value={editFormData.date} onChange={e => setEditFormData({ ...editFormData, date: e.target.value })} />
-
-              <label className="label cursor-pointer justify-start gap-4 mt-2">
-                <span className="label-text opacity-80 font-medium">Full tank</span>
-                <input type="checkbox" className="toggle toggle-accent" checked={editFormData.isFullTank} onChange={e => setEditFormData({ ...editFormData, isFullTank: e.target.checked })} />
-              </label>
-
-              <div className="modal-action mt-4">
-                <button type="submit" className="btn btn-primary">Save Changes</button>
-                <button type="button" onClick={() => document.getElementById('edit_modal').close()} className="btn">Cancel</button>
-              </div>
-            </form>
-          )}
-        </div>
-        <form method="dialog" className="modal-backdrop">
-          <button>close</button>
-        </form>
-      </dialog>
+      <AnimatePresence>
+        {editingRecord && (
+          <EditFuelRecordModal
+            isOpen={!!editingRecord}
+            onClose={() => setEditingRecord(null)}
+            record={editingRecord}
+            car={selectedCar}
+            onSave={handleUpdateRecord}
+          />
+        )}
+      </AnimatePresence>
     </Layout>
   );
 }
