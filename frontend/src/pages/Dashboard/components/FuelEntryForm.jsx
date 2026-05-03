@@ -6,11 +6,11 @@ function FuelEntryForm({ selectedCar, onAddFuel, stats, onClose }) {
   const { currency, convert } = useCurrencyStore();
   const [fuelFormData, setFuelFormData] = useState({ 
     fuelCost: '', 
-    pricePerLitre: '', 
+    pricePerUnit: '', 
     odometer: '', 
     isFullTank: true,
     fuelLevel: 100,
-    fuelType: 'GASOLINE',
+    fuelType: selectedCar?.engineType === 'EV' ? 'ELECTRICITY' : 'GASOLINE',
     date: new Date().toISOString().slice(0, 16) // Format: YYYY-MM-DDTHH:mm
   });
 
@@ -19,9 +19,12 @@ function FuelEntryForm({ selectedCar, onAddFuel, stats, onClose }) {
     const rate = convert(1);
     const toTHB = (val) => rate ? val / rate : val;
 
+    const isElec = fuelFormData.fuelType === 'ELECTRICITY';
+
     const payload = {
       fuelCost: toTHB(parseFloat(fuelFormData.fuelCost)),
-      pricePerLitre: toTHB(parseFloat(fuelFormData.pricePerLitre)),
+      pricePerLitre: isElec ? undefined : toTHB(parseFloat(fuelFormData.pricePerUnit)),
+      pricePerKwh: isElec ? toTHB(parseFloat(fuelFormData.pricePerUnit)) : undefined,
       odometer: parseFloat(fuelFormData.odometer),
       isFullTank: fuelFormData.isFullTank,
       fuelLevel: fuelFormData.isFullTank ? 100 : fuelFormData.fuelLevel,
@@ -33,11 +36,11 @@ function FuelEntryForm({ selectedCar, onAddFuel, stats, onClose }) {
     await onAddFuel(payload);
     setFuelFormData({ 
       fuelCost: '', 
-      pricePerLitre: '', 
+      pricePerUnit: '', 
       odometer: '', 
       isFullTank: true,
       fuelLevel: 100,
-      fuelType: 'GASOLINE',
+      fuelType: selectedCar?.engineType === 'EV' ? 'ELECTRICITY' : 'GASOLINE',
       date: new Date().toISOString().slice(0, 16)
     });
     onClose();
@@ -58,7 +61,9 @@ function FuelEntryForm({ selectedCar, onAddFuel, stats, onClose }) {
           ✕
         </button>
         <div className="card-body">
-          <h2 className="card-title text-accent border-b border-base-300 pb-2 font-['Rajdhani'] font-black italic uppercase tracking-tighter">Add Fuel Record</h2>
+          <h2 className="card-title text-accent border-b border-base-300 pb-2 font-['Rajdhani'] font-black italic uppercase tracking-tighter">
+            {selectedCar?.engineType === 'EV' ? 'Log Charging Session' : 'Add Fuel Record'}
+          </h2>
           <form onSubmit={handleSubmit} className="flex flex-col gap-2">
             <div className="grid grid-cols-2 gap-3">
               <div className="form-control">
@@ -68,22 +73,29 @@ function FuelEntryForm({ selectedCar, onAddFuel, stats, onClose }) {
                   value={fuelFormData.fuelType}
                   onChange={e => setFuelFormData({ ...fuelFormData, fuelType: e.target.value })}
                 >
-                  <option value="GASOLINE">GASOLINE</option>
-                  <option value="DIESEL">DIESEL</option>
-                  <option value="E20">E20</option>
-                  <option value="E85">E85</option>
+                  {selectedCar?.engineType !== 'EV' && (
+                    <>
+                      <option value="GASOLINE">GASOLINE</option>
+                      <option value="DIESEL">DIESEL</option>
+                      <option value="E20">E20</option>
+                      <option value="E85">E85</option>
+                    </>
+                  )}
+                  {(selectedCar?.engineType === 'EV' || selectedCar?.engineType === 'PHEV') && (
+                    <option value="ELECTRICITY">ELECTRICITY</option>
+                  )}
                 </select>
               </div>
               <div className="form-control">
-                <label className="text-[10px] font-black uppercase tracking-widest text-text-secondary opacity-60 ml-1">Price of Gas ({currency})</label>
+                <label className="text-[10px] font-black uppercase tracking-widest text-text-secondary opacity-60 ml-1">Total Cost ({currency})</label>
                 <input required type="number" step="0.01" className="input [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none input-sm input-bordered font-bold" value={fuelFormData.fuelCost} onChange={e => setFuelFormData({ ...fuelFormData, fuelCost: e.target.value })} />
               </div>
             </div>
 
             <div className="grid grid-cols-2 gap-3 mt-1">
               <div className="form-control">
-                <label className="text-[10px] font-black uppercase tracking-widest text-text-secondary opacity-60 ml-1">Price per Litre ({currency})</label>
-                <input required type="number" step="0.01" className="input [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none input-sm input-bordered font-bold" value={fuelFormData.pricePerLitre} onChange={e => setFuelFormData({ ...fuelFormData, pricePerLitre: e.target.value })} />
+                <label className="text-[10px] font-black uppercase tracking-widest text-text-secondary opacity-60 ml-1">Price per {fuelFormData.fuelType === 'ELECTRICITY' ? 'kWh' : 'Litre'} ({currency})</label>
+                <input required type="number" step="0.01" className="input [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none input-sm input-bordered font-bold" value={fuelFormData.pricePerUnit} onChange={e => setFuelFormData({ ...fuelFormData, pricePerUnit: e.target.value })} />
               </div>
               <div className="form-control">
                 <label className="text-[10px] font-black uppercase tracking-widest text-text-secondary opacity-60 ml-1">Current Mileage (km)</label>
@@ -102,7 +114,7 @@ function FuelEntryForm({ selectedCar, onAddFuel, stats, onClose }) {
 
             <div className="flex items-center justify-between mt-4 bg-base-200 p-3 rounded-lg border border-industrial-border">
               <label className="label cursor-pointer justify-start gap-4 p-0">
-                <span className="label-text opacity-80 font-black uppercase text-[10px] tracking-widest">Full tank</span>
+                <span className="label-text opacity-80 font-black uppercase text-[10px] tracking-widest">{fuelFormData.fuelType === 'ELECTRICITY' ? 'Full Charge' : 'Full tank'}</span>
                 <input type="checkbox" className="toggle toggle-accent toggle-sm" checked={fuelFormData.isFullTank} onChange={e => setFuelFormData({ ...fuelFormData, isFullTank: e.target.checked })} />
               </label>
 
@@ -117,7 +129,7 @@ function FuelEntryForm({ selectedCar, onAddFuel, stats, onClose }) {
             </div>
 
             <button className="btn btn-accent btn-sm mt-4 font-['Rajdhani'] font-black uppercase tracking-widest">
-              Refuel // Initialize Log
+              {fuelFormData.fuelType === 'ELECTRICITY' ? 'Charge // Initialize Log' : 'Refuel // Initialize Log'}
             </button>
           </form>
 

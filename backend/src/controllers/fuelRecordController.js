@@ -3,10 +3,12 @@ import { z } from 'zod';
 
 const fuelRecordSchema = z.object({
   fuelCost: z.number().nonnegative(),
-  pricePerLitre: z.number().nonnegative(),
+  pricePerLitre: z.number().nonnegative().optional(),
+  pricePerKwh: z.number().nonnegative().optional(),
   odometer: z.number().nonnegative(),
   isFullTank: z.boolean().default(true),
   fuelLevel: z.number().min(0).max(100).optional(),
+  fuelType: z.enum(['GASOLINE', 'DIESEL', 'E20', 'E85', 'ELECTRICITY']).optional(),
   date: z.string().optional().refine((val) => !val || !isNaN(Date.parse(val)), {
     message: "Invalid date format",
   }),
@@ -55,16 +57,20 @@ export const addFuelRecord = async (req, res) => {
     const car = await findAccessibleCar(carId, req.user);
     if (!car) return res.status(404).json({ message: 'Car not found' });
 
-    const { fuelCost, pricePerLitre, odometer, isFullTank, fuelLevel, date } = fuelRecordSchema.parse(req.body);
-    const litresRefueled = pricePerLitre > 0 ? (fuelCost / pricePerLitre) : 0;
+    const { fuelCost, pricePerLitre, pricePerKwh, odometer, isFullTank, fuelLevel, fuelType, date } = fuelRecordSchema.parse(req.body);
+    const litresRefueled = (pricePerLitre && pricePerLitre > 0) ? (fuelCost / pricePerLitre) : null;
+    const kwhAdded = (pricePerKwh && pricePerKwh > 0) ? (fuelCost / pricePerKwh) : null;
 
     const record = await prisma.fuelRecord.create({
       data: {
         carId,
         fuelCost,
         pricePerLitre,
+        pricePerKwh,
         odometer,
         litresRefueled,
+        kwhAdded,
+        fuelType: fuelType || (kwhAdded ? 'ELECTRICITY' : 'GASOLINE'),
         distanceTraveled: 0, // Will be recalculated
         consumptionRate: null, // Will be recalculated
         isFullTank,
@@ -82,8 +88,11 @@ export const addFuelRecord = async (req, res) => {
       carId,
       fuelCost,
       pricePerLitre,
+      pricePerKwh,
       odometer,
       litresRefueled,
+      kwhAdded,
+      fuelType: record.fuelType,
       isFullTank,
       date: date || new Date().toISOString()
     });
@@ -125,9 +134,10 @@ const EMISSION_FACTORS = {
   DIESEL: 2.68,
   E20: 1.85,
   E85: 1.51,
+  ELECTRICITY: 0.40,
 };
 
-const calculateGlobalAvgConsumption = (records) => {
+const calculateGlobalAvgConsumption = (records, engineType) => {
   const fullTankRecords = records.filter(r => r.isFullTank);
   if (fullTankRecords.length < 2) return null;
 
@@ -136,9 +146,15 @@ const calculateGlobalAvgConsumption = (records) => {
   const totalDist = lastFT.odometer - firstFT.odometer;
   
   const midRecords = records.slice(records.indexOf(firstFT) + 1, records.indexOf(lastFT) + 1);
-  const totalFuel = midRecords.reduce((sum, r) => sum + r.litresRefueled, 0);
+  const totalEnergy = midRecords.reduce((sum, r) => {
+    const litres = r.litresRefueled || 0;
+    const kwh = r.kwhAdded || 0;
+    if (engineType === 'EV') return sum + kwh;
+    if (engineType === 'ICE' || engineType === 'HEV') return sum + litres;
+    return sum + litres + (kwh / 8.9);
+  }, 0);
   
-  return totalFuel > 0 ? totalDist / totalFuel : null;
+  return totalEnergy > 0 ? totalDist / totalEnergy : null;
 };
 
 const calculateNewBlendFactor = (carTankSize, runningFuelLevel, fuelUsed, addedLitres, addedFactor, currentBlendFactor) => {
@@ -153,7 +169,7 @@ const calculateNewBlendFactor = (carTankSize, runningFuelLevel, fuelUsed, addedL
   return currentBlendFactor;
 };
 
-const recalculateCarHistory = async (carId) => {
+export const recalculateCarHistory = async (carId) => {
   const car = await prisma.car.findUnique({ where: { id: carId } });
   const records = await prisma.fuelRecord.findMany({
     where: { carId },
@@ -166,7 +182,7 @@ const recalculateCarHistory = async (carId) => {
 
   if (records.length === 0) return;
 
-  const globalAvgConsumption = calculateGlobalAvgConsumption(records);
+  const globalAvgConsumption = calculateGlobalAvgConsumption(records, car.engineType);
   
   let lastFullTankIdx = -1;
   let runningFuelLevel = 100; // Starting assumption
@@ -181,18 +197,18 @@ const recalculateCarHistory = async (carId) => {
     
     current.distanceTraveled = previous ? current.odometer - previous.odometer : 0;
     
-    // Calculate Carbon Emitted for this segment (based on blend in tank before refill)
     const segmentConsumption = globalAvgConsumption || 10;
     const fuelUsed = current.distanceTraveled / segmentConsumption;
     current.carbonEmitted = fuelUsed * currentBlendFactor;
 
-    // Update Blend Factor (Mixing)
-    const addedFactor = EMISSION_FACTORS[current.fuelType] || 2.31;
+    const addedFactor = EMISSION_FACTORS[current.fuelType] || (car.engineType === 'EV' ? 0.40 : 2.31);
+    const addedLitres = current.litresRefueled || 0; // For PHEV/ICE tank mixing
+    
     currentBlendFactor = calculateNewBlendFactor(
       car.tankSize, 
       runningFuelLevel, 
       fuelUsed, 
-      current.litresRefueled, 
+      addedLitres, 
       addedFactor, 
       currentBlendFactor
     );
@@ -201,11 +217,17 @@ const recalculateCarHistory = async (carId) => {
       current.fuelLevel = 100;
       if (lastFullTankIdx !== -1) {
         const segmentRecords = recordUpdates.slice(lastFullTankIdx + 1, i + 1);
-        const segmentFuel = segmentRecords.reduce((sum, r) => sum + r.litresRefueled, 0);
+        const segmentEnergy = segmentRecords.reduce((sum, r) => {
+          const litres = r.litresRefueled || 0;
+          const kwh = r.kwhAdded || 0;
+          if (car.engineType === 'EV') return sum + kwh;
+          if (car.engineType === 'ICE' || car.engineType === 'HEV') return sum + litres;
+          return sum + litres + (kwh / 8.9);
+        }, 0);
         const segmentDist = current.odometer - recordUpdates[lastFullTankIdx].odometer;
         
-        if (segmentFuel > 0) {
-          const segmentAvg = segmentDist / segmentFuel;
+        if (segmentEnergy > 0) {
+          const segmentAvg = segmentDist / segmentEnergy;
           for (let j = lastFullTankIdx + 1; j <= i; j++) {
             recordUpdates[j].consumptionRate = segmentAvg;
           }
@@ -215,9 +237,9 @@ const recalculateCarHistory = async (carId) => {
       runningFuelLevel = 100;
     } else {
       current.consumptionRate = globalAvgConsumption;
-      if (car.tankSize > 0) {
+      if (car.tankSize > 0 && car.engineType !== 'EV') {
         const remainingAfterUsage = ((runningFuelLevel / 100) * car.tankSize) - fuelUsed;
-        const totalAfterRefill = remainingAfterUsage + current.litresRefueled;
+        const totalAfterRefill = remainingAfterUsage + addedLitres;
         current.fuelLevel = Math.min(100, Math.max(0, (totalAfterRefill / car.tankSize) * 100));
         runningFuelLevel = current.fuelLevel;
       } else {

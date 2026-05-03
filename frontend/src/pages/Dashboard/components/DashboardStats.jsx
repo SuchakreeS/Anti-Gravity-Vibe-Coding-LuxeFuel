@@ -1,7 +1,8 @@
 import React from 'react';
 import { useCurrencyStore } from '../../../store/useCurrencyStore';
 
-function DashboardStats({ stats }) {
+function DashboardStats({ stats, car }) {
+  const unit = car?.engineType === 'EV' ? 'km/kWh' : 'km/L';
   const { symbol } = useCurrencyStore();
   if (!stats) return null;
   const { latest, avgConsumption, fullTankCount, comparison, totalSpent, avgCostPerKm } = stats;
@@ -37,7 +38,7 @@ function DashboardStats({ stats }) {
             <div className="stats shadow-2xl w-full bg-carbon border border-industrial-border">
               <div className="stat">
                 <div className="stat-title text-text-secondary">Avg. Consumption</div>
-                <div className="stat-value text-lg text-text-primary">{avgConsumption.toFixed(2)} km/L</div>
+                <div className="stat-value text-lg text-text-primary">{avgConsumption.toFixed(2)} {unit}</div>
                 <div className="stat-desc text-text-secondary">From {fullTankCount} full fill-ups</div>
               </div>
             </div>
@@ -48,14 +49,14 @@ function DashboardStats({ stats }) {
           <div className="stats shadow-2xl w-full bg-neon-violet text-white">
             <div className="stat">
               <div className="stat-title text-white/80">First Full Fill-up</div>
-              <div className="stat-value text-white">{latest.consumptionRate.toFixed(2)} km/L</div>
+              <div className="stat-value text-white">{latest.consumptionRate.toFixed(2)} {unit}</div>
               <div className="stat-desc text-white/90">Baseline established</div>
             </div>
           </div>
           <div className="stats shadow-2xl w-full bg-carbon border border-industrial-border">
             <div className="stat">
               <div className="stat-title text-text-secondary">Avg. Consumption</div>
-              <div className="stat-value text-lg text-text-primary">{latest.consumptionRate.toFixed(2)} km/L</div>
+              <div className="stat-value text-lg text-text-primary">{latest.consumptionRate.toFixed(2)} {unit}</div>
               <div className="stat-desc text-text-secondary">From 1 full fill-up</div>
             </div>
           </div>
@@ -66,12 +67,12 @@ function DashboardStats({ stats }) {
             <div className="stat">
               <div className="stat-title text-current opacity-80 uppercase text-[10px] font-bold tracking-widest">Latest</div>
               <div className="stat-value">{comparison.latest.toFixed(2)}</div>
-              <div className="stat-desc text-current opacity-70 font-medium tracking-widest">km/L</div>
+              <div className="stat-desc text-current opacity-70 font-medium tracking-widest">{unit}</div>
             </div>
             <div className="stat border-l border-industrial-border">
               <div className="stat-title text-current opacity-80 uppercase text-[10px] font-bold tracking-widest">Previous</div>
               <div className="stat-value">{comparison.previous.toFixed(2)}</div>
-              <div className="stat-desc text-current opacity-70 font-medium tracking-widest">km/L</div>
+              <div className="stat-desc text-current opacity-70 font-medium tracking-widest">{unit}</div>
             </div>
           </div>
 
@@ -91,7 +92,7 @@ function DashboardStats({ stats }) {
             <div className="stats shadow-2xl w-full bg-carbon border border-industrial-border">
               <div className="stat">
                 <div className="stat-title text-text-secondary">Avg. Consumption</div>
-                <div className="stat-value text-lg text-text-primary">{avgConsumption.toFixed(2)} km/L</div>
+                <div className="stat-value text-lg text-text-primary">{avgConsumption.toFixed(2)} {unit}</div>
                 <div className="stat-desc text-text-secondary">From {fullTankCount} full fill-ups</div>
               </div>
             </div>

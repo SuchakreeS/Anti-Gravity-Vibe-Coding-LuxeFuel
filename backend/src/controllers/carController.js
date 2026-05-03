@@ -25,6 +25,8 @@ const carSchema = z.object({
   licensePlate: z.string().nullable().optional(),
   photoUrl: z.string().nullable().optional(),
   tankSize: z.number().nonnegative().nullable().optional(),
+  batteryCapacity: z.number().nonnegative().nullable().optional(),
+  engineType: z.enum(['ICE', 'EV', 'PHEV', 'HEV']).optional().default('ICE'),
   otherSpecs: z.string().nullable().optional(),
   maintenanceData: z.string().nullable().optional(),
   isPersonal: z.boolean().optional().default(false),
@@ -72,6 +74,8 @@ export const createCar = async (req, res) => {
       licensePlate: data.licensePlate || null,
       photoUrl: data.photoUrl || null,
       tankSize: data.tankSize,
+      batteryCapacity: data.batteryCapacity,
+      engineType: data.engineType,
       otherSpecs: data.otherSpecs || null,
       maintenanceData: data.maintenanceData || null,
     };
@@ -177,6 +181,8 @@ export const updateCar = async (req, res) => {
         licensePlate: data.licensePlate || existing.licensePlate,
         photoUrl: data.photoUrl || existing.photoUrl,
         tankSize: data.tankSize ?? existing.tankSize,
+        batteryCapacity: data.batteryCapacity ?? existing.batteryCapacity,
+        engineType: data.engineType ?? existing.engineType,
         otherSpecs: data.otherSpecs || null,
         maintenanceData: data.maintenanceData || existing.maintenanceData,
       }

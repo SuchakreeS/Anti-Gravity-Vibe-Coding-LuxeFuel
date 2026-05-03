@@ -18,8 +18,14 @@ const EcoPulseCard = ({ records = [], car }) => {
     const latest = records[records.length - 1];
     const fuelBonus = latest.fuelType === 'E85' ? 30 : latest.fuelType === 'E20' ? 15 : 0;
     
-    // Efficiency Factor: how good is the km/L
-    const efficiencyFactor = Math.min(70, (latest.consumptionRate || 10) * 4); 
+    // Efficiency Factor: how good is the km/L or km/kWh
+    const efficiencyRate = latest.consumptionRate || 10;
+    let efficiencyFactor = 0;
+    if (car?.engineType === 'EV') {
+      efficiencyFactor = Math.min(70, efficiencyRate * 10); // e.g. 6 km/kWh * 10 = 60
+    } else {
+      efficiencyFactor = Math.min(70, efficiencyRate * 4); // e.g. 15 km/L * 4 = 60
+    }
     const rawScore = efficiencyFactor + fuelBonus;
     const score = Math.round(Math.min(100, Math.max(10, rawScore)));
 
@@ -64,7 +70,7 @@ const EcoPulseCard = ({ records = [], car }) => {
             <motion.div
               key={i}
               initial={{ height: 0 }}
-              animate={{ height: `${(t.val / 20) * 100}%` }}
+              animate={{ height: `${(t.val / (car?.engineType === 'EV' ? 10 : 25)) * 100}%` }}
               className={`flex-1 rounded-t-sm ${score > 70 ? 'bg-emerald-500' : 'bg-turbo-orange'} opacity-60 shadow-neon`}
             />
           ))}

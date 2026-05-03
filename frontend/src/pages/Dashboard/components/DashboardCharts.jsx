@@ -23,7 +23,7 @@ const CustomTooltip = ({ active, payload, label, prefix = '', suffix = '' }) => 
   return null;
 };
 
-function DashboardCharts({ records, convertedRecords }) {
+function DashboardCharts({ records, convertedRecords, car }) {
   const { currency, symbol } = useCurrencyStore();
 
   return (
@@ -54,12 +54,12 @@ function DashboardCharts({ records, convertedRecords }) {
                 />
                 <YAxis axisLine={false} tickLine={false} tick={{ fill: '#475569', fontSize: 10, fontWeight: 'bold' }} dx={-10} />
                 <Tooltip
-                  content={<CustomTooltip suffix="km/L" />}
+                  content={<CustomTooltip suffix={car?.engineType === 'EV' ? " km/kWh" : " km/L"} />}
                   cursor={false}
                   wrapperStyle={{ zIndex: 1000 }}
                   allowEscapeViewBox={{ x: false, y: true }}
                 />
-                <Area isAnimationActive={false} type="monotone" connectNulls={true} dataKey="consumptionRate" name="km/L" stroke="#A855F7" fillOpacity={1} fill="url(#colorConsumption)" strokeWidth={4} dot={{ r: 3, fill: "#A855F7", strokeWidth: 0, opacity: 1 }} activeDot={{ r: 6, strokeWidth: 0, fill: "#A855F7" }} />
+                <Area isAnimationActive={false} type="monotone" connectNulls={true} dataKey="consumptionRate" name={car?.engineType === 'EV' ? "km/kWh" : "km/L"} stroke="#A855F7" fillOpacity={1} fill="url(#colorConsumption)" strokeWidth={4} dot={{ r: 3, fill: "#A855F7", strokeWidth: 0, opacity: 1 }} activeDot={{ r: 6, strokeWidth: 0, fill: "#A855F7" }} />
               </AreaChart>
             </ResponsiveContainer>
           </div>
@@ -107,7 +107,7 @@ function DashboardCharts({ records, convertedRecords }) {
       {/* 3. Gas Price Refueled (Formerly #2) */}
       <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ delay: 0.2 }} className="card bg-carbon border border-industrial-border shadow-2xl">
         <div className="card-body">
-          <h2 className="card-title text-text-secondary text-xs uppercase tracking-widest mb-4">3. Gas Price Refueled / Time ({currency})</h2>
+          <h2 className="card-title text-text-secondary text-xs uppercase tracking-widest mb-4">3. {car?.engineType === 'EV' ? 'Charging Cost' : 'Gas Price Refueled'} / Time ({currency})</h2>
           <div className="h-64 overflow-visible">
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={convertedRecords} margin={{ top: 20, right: 50, left: 10, bottom: 0 }}>
