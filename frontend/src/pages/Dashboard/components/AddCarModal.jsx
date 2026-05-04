@@ -17,7 +17,13 @@ function AddCarModal({ onAddCar, onClose, makes, models, fetchModels, loadingMak
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    const carData = { ...newCarForm };
+    
+    // Sanitize data before sending to backend
+    const carData = { 
+      ...newCarForm,
+      tankSize: newCarForm.tankSize !== '' ? parseFloat(newCarForm.tankSize) : null,
+      batteryCapacity: newCarForm.batteryCapacity !== '' ? parseFloat(newCarForm.batteryCapacity) : null,
+    };
     
     if (userRole === 'user' || userRole === 'USER' || userRole === 'DRIVER') {
       carData.isPersonal = true;

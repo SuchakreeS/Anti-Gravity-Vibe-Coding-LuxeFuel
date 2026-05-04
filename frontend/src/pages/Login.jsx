@@ -13,6 +13,7 @@ const loginSchema = z.object({
 });
 
 import { useCyberToast } from '../components/CyberToast';
+import tachometer from '../assets/tachometer.png';
 
 function Login() {
   const cyberToast = useCyberToast();
@@ -37,11 +38,17 @@ function Login() {
     <div className="min-h-screen flex bg-asphalt font-['Rajdhani']">
       {/* Left Side: Brand & Visuals */}
       <div className="hidden lg:flex flex-1 relative bg-carbon overflow-hidden">
-        {/* Carbon Fiber Pattern */}
+        {/* Tachometer Background */}
         <div 
-          className="absolute inset-0 opacity-10"
+          className="absolute inset-0 z-0 bg-cover bg-center bg-no-repeat"
+          style={{ backgroundImage: `url(${tachometer})`, filter: 'brightness(0.4)' }}
+        />
+        
+        {/* Carbon Fiber Pattern Overlay */}
+        <div 
+          className="absolute inset-0 opacity-10 z-1"
           style={{
-            backgroundColor: '#0F111A',
+            backgroundColor: 'transparent',
             backgroundImage: `linear-gradient(45deg, #050508 25%, transparent 25%), linear-gradient(-45deg, #050508 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #050508 75%), linear-gradient(-45deg, transparent 75%, #050508 75%)`,
             backgroundSize: '20px 20px',
             backgroundPosition: '0 0, 0 10px, 10px 10px, 10px 0'

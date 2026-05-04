@@ -2,9 +2,10 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import CyberUploader from '../../components/CyberUploader';
 import { uploadCarPhoto } from '../../utils/upload';
+import Car_default from '../../assets/car-svgrepo-com.svg'
 
-function MyCars({ 
-  isOrgUser, isAdmin, isOrgMember, 
+function MyCars({
+  isOrgUser, isAdmin, isOrgMember,
   displayCars, canAddCar,
   addingCar, setAddingCar,
   useOwnCar, setUseOwnCar,
@@ -45,11 +46,11 @@ function MyCars({
             {isAdmin() && (
               <div className="form-control mb-3 p-3 bg-base-300 rounded-lg">
                 <label className="label cursor-pointer justify-start gap-3 py-0">
-                  <input 
-                    type="checkbox" 
-                    className="toggle toggle-primary toggle-sm" 
+                  <input
+                    type="checkbox"
+                    className="toggle toggle-primary toggle-sm"
                     checked={useOwnCar}
-                    onChange={e => setUseOwnCar(e.target.checked)} 
+                    onChange={e => setUseOwnCar(e.target.checked)}
                   />
                   <div>
                     <span className="label-text font-medium text-sm">Personal car</span>
@@ -69,12 +70,12 @@ function MyCars({
                 </div>
                 <div className="form-control">
                   <label className="label py-1"><span className="label-text font-medium opacity-70">License Plate {isOrgMember() ? '*' : '(Optional)'}</span></label>
-                  <input 
-                    placeholder="e.g. กข-1234" 
-                    className="input input-sm input-bordered" 
+                  <input
+                    placeholder="e.g. กข-1234"
+                    className="input input-sm input-bordered"
                     required={isOrgMember()}
-                    value={newCarForm.licensePlate} 
-                    onChange={e => setNewCarForm({ ...newCarForm, licensePlate: e.target.value })} 
+                    value={newCarForm.licensePlate}
+                    onChange={e => setNewCarForm({ ...newCarForm, licensePlate: e.target.value })}
                   />
                 </div>
               </div>
@@ -82,12 +83,12 @@ function MyCars({
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 <div className="form-control">
                   <label className="label py-1"><span className="label-text font-medium opacity-70">Gas Tank Size (L)</span></label>
-                  <input 
-                    type="number" 
-                    placeholder="e.g. 50" 
-                    className="input input-sm input-bordered" 
-                    value={newCarForm.tankSize} 
-                    onChange={e => setNewCarForm({ ...newCarForm, tankSize: parseFloat(e.target.value) || 0 })} 
+                  <input
+                    type="number"
+                    placeholder="e.g. 50"
+                    className="input input-sm input-bordered"
+                    value={newCarForm.tankSize}
+                    onChange={e => setNewCarForm({ ...newCarForm, tankSize: parseFloat(e.target.value) || 0 })}
                   />
                 </div>
                 <div className="form-control">
@@ -100,15 +101,15 @@ function MyCars({
                 <div className="flex justify-between items-center mb-1">
                   <span className="text-sm font-medium opacity-70">Brand & Model</span>
                   <label className="label cursor-pointer p-0 gap-2">
-                    <span className="label-text text-xs opacity-50">Manual entry</span> 
+                    <span className="label-text text-xs opacity-50">Manual entry</span>
                     <input type="checkbox" className="checkbox checkbox-xs" checked={isManualEntry} onChange={e => setIsManualEntry(e.target.checked)} />
                   </label>
                 </div>
 
                 {!isManualEntry ? (
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                    <select 
-                      required 
+                    <select
+                      required
                       className="select select-bordered select-sm w-full"
                       value={newCarForm.brand}
                       onChange={e => {
@@ -121,8 +122,8 @@ function MyCars({
                       {makes.map(m => <option key={m.id} value={m.name}>{m.name}</option>)}
                     </select>
 
-                    <select 
-                      required 
+                    <select
+                      required
                       className="select select-bordered select-sm w-full"
                       disabled={!newCarForm.brand || loadingModels}
                       value={newCarForm.model}
@@ -193,10 +194,10 @@ function MyCars({
               ) : (
                 <div className="flex justify-between items-center">
                   <div className="flex items-center gap-4">
-                    <img 
-                      src={car.photoUrl || ASSETS.DEFAULT_CAR} 
-                      alt={car.name} 
-                      className="w-16 h-16 rounded-md object-cover border border-industrial-border" 
+                    <img
+                      src={car.photoUrl || Car_default}
+                      alt={car.name}
+                      className="w-16 h-16 rounded-md object-cover border border-industrial-border"
                     />
                     <div>
                       <div className="font-bold text-lg flex items-center gap-2">
