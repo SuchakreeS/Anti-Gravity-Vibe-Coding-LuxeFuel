@@ -1,15 +1,39 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useCurrencyStore } from '../../../store/useCurrencyStore';
+import FuelGauge from '../../../components/dashboard/FuelGauge';
 
-function DashboardStats({ stats, car }) {
-  const unit = car?.engineType === 'EV' ? 'km/kWh' : 'km/L';
+function DashboardStats({ stats, car, useHundredKm, setUseHundredKm }) {
   const { symbol } = useCurrencyStore();
+  
   if (!stats) return null;
   const { latest, avgConsumption, fullTankCount, comparison, totalSpent, avgCostPerKm } = stats;
 
+  const getUnit = () => {
+    if (car?.engineType === 'EV') {
+      return useHundredKm ? 'kWh/100km' : 'km/kWh';
+    }
+    return useHundredKm ? 'L/100km' : 'km/L';
+  };
+
+  const formatValue = (val) => {
+    if (val === null || val === undefined) return 'N/A';
+    const processed = useHundredKm ? (100 / val) : val;
+    return processed.toFixed(2);
+  };
+
+  const unit = getUnit();
+
   return (
     <div className="flex flex-col gap-3">
-      {/* Financial Stats Summary */}
+      {/* 1. System Status Gauge */}
+      {latest && latest.fuelLevel !== null && (
+        <FuelGauge 
+          level={latest.fuelLevel} 
+          engineType={car?.engineType} 
+        />
+      )}
+
+      {/* 2. Financial Stats Summary */}
       <div className="stats shadow-2xl w-full bg-carbon border border-industrial-border text-text-primary">
         <div className="stat px-4 py-3">
           <div className="stat-title text-text-secondary text-[10px] font-black uppercase tracking-widest">Total Spent</div>
@@ -29,35 +53,35 @@ function DashboardStats({ stats, car }) {
         <div className="flex flex-col gap-3">
           <div className="stats shadow-2xl w-full bg-carbon border border-industrial-border text-text-primary">
             <div className="stat">
-              <div className="stat-title text-text-secondary">Partially Filled</div>
-              <div className="stat-value text-xl text-neon-violet">Waiting for next Full Tank</div>
-              <div className="stat-desc text-text-secondary">Distance added: +{latest.distanceTraveled} km</div>
+              <div className="stat-title text-text-secondary text-[10px] uppercase font-bold tracking-widest opacity-60">Partially Filled</div>
+              <div className="stat-value text-lg text-neon-violet uppercase font-black tracking-tighter italic">Pending Calibration</div>
+              <div className="stat-desc text-text-secondary text-[10px] uppercase font-bold tracking-widest opacity-40">Distance: +{latest.distanceTraveled} km</div>
             </div>
           </div>
           {avgConsumption !== null && (
             <div className="stats shadow-2xl w-full bg-carbon border border-industrial-border">
               <div className="stat">
-                <div className="stat-title text-text-secondary">Avg. Consumption</div>
-                <div className="stat-value text-lg text-text-primary">{avgConsumption.toFixed(2)} {unit}</div>
-                <div className="stat-desc text-text-secondary">From {fullTankCount} full fill-ups</div>
+                <div className="stat-title text-text-secondary text-[10px] uppercase font-bold tracking-widest opacity-60">Avg. Consumption</div>
+                <div className="stat-value text-lg text-text-primary font-black italic">{formatValue(avgConsumption)} {unit}</div>
+                <div className="stat-desc text-text-secondary text-[10px] uppercase font-bold tracking-widest opacity-40">From {fullTankCount} full fill-ups</div>
               </div>
             </div>
           )}
         </div>
       ) : !comparison ? (
         <div className="flex flex-col gap-3">
-          <div className="stats shadow-2xl w-full bg-neon-violet text-white">
+          <div className="stats shadow-2xl w-full bg-neon-violet/20 border border-neon-violet text-white">
             <div className="stat">
-              <div className="stat-title text-white/80">First Full Fill-up</div>
-              <div className="stat-value text-white">{latest.consumptionRate.toFixed(2)} {unit}</div>
-              <div className="stat-desc text-white/90">Baseline established</div>
+              <div className="stat-title text-neon-violet uppercase text-[10px] font-black tracking-widest">First Full Fill-up</div>
+              <div className="stat-value text-white font-black italic">{formatValue(latest.consumptionRate)} {unit}</div>
+              <div className="stat-desc text-neon-violet/70 uppercase text-[9px] font-bold tracking-widest">Baseline established</div>
             </div>
           </div>
           <div className="stats shadow-2xl w-full bg-carbon border border-industrial-border">
             <div className="stat">
-              <div className="stat-title text-text-secondary">Avg. Consumption</div>
-              <div className="stat-value text-lg text-text-primary">{latest.consumptionRate.toFixed(2)} {unit}</div>
-              <div className="stat-desc text-text-secondary">From 1 full fill-up</div>
+              <div className="stat-title text-text-secondary text-[10px] uppercase font-bold tracking-widest opacity-60">Avg. Consumption</div>
+              <div className="stat-value text-lg text-text-primary font-black italic">{formatValue(latest.consumptionRate)} {unit}</div>
+              <div className="stat-desc text-text-secondary text-[10px] uppercase font-bold tracking-widest opacity-40">From 1 full fill-up</div>
             </div>
           </div>
         </div>
@@ -65,25 +89,29 @@ function DashboardStats({ stats, car }) {
         <>
           <div className={`stats shadow-2xl w-full stats-vertical sm:stats-horizontal border border-industrial-border ${comparison.isEfficiencyImproved ? 'bg-emerald-950/30 text-emerald-400' : 'bg-rose-950/30 text-rose-400'}`}>
             <div className="stat">
-              <div className="stat-title text-current opacity-80 uppercase text-[10px] font-bold tracking-widest">Latest</div>
-              <div className="stat-value">{comparison.latest.toFixed(2)}</div>
-              <div className="stat-desc text-current opacity-70 font-medium tracking-widest">{unit}</div>
+              <div className="stat-title text-current opacity-80 uppercase text-[10px] font-black tracking-widest">Latest</div>
+              <div className="stat-value font-black italic">{formatValue(comparison.latest)}</div>
+              <div className="stat-desc text-current opacity-70 font-black uppercase text-[9px] tracking-widest">{unit}</div>
             </div>
             <div className="stat border-l border-industrial-border">
-              <div className="stat-title text-current opacity-80 uppercase text-[10px] font-bold tracking-widest">Previous</div>
-              <div className="stat-value">{comparison.previous.toFixed(2)}</div>
-              <div className="stat-desc text-current opacity-70 font-medium tracking-widest">{unit}</div>
+              <div className="stat-title text-current opacity-80 uppercase text-[10px] font-black tracking-widest">Previous</div>
+              <div className="stat-value font-black italic">{formatValue(comparison.previous)}</div>
+              <div className="stat-desc text-current opacity-70 font-black uppercase text-[9px] tracking-widest">{unit}</div>
             </div>
           </div>
 
           <div className={`stats shadow-2xl w-full border border-industrial-border ${comparison.isEfficiencyImproved ? 'bg-emerald-500/20 text-emerald-400' : 'bg-rose-500/20 text-rose-400'}`}>
             <div className="stat py-2 items-center text-center">
-              <div className="stat-title text-current opacity-80 text-xs uppercase font-bold tracking-wider">Difference</div>
-              <div className="stat-value text-2xl font-bold flex items-center justify-center gap-2">
-                {comparison.isEfficiencyImproved ? '📉' : '📈'} {comparison.isEfficiencyImproved ? '+' : ''}{comparison.diff.toFixed(2)}
+              <div className="stat-title text-current opacity-80 text-[10px] uppercase font-black tracking-widest">Difference</div>
+              <div className="stat-value text-2xl font-black italic flex items-center justify-center gap-2 tracking-tighter">
+                {comparison.isEfficiencyImproved ? '📉' : '📈'} 
+                {useHundredKm 
+                  ? `${(100/comparison.latest - 100/comparison.previous).toFixed(2)}`
+                  : `${(comparison.isEfficiencyImproved ? '+' : '')}${comparison.diff.toFixed(2)}`
+                }
               </div>
-              <div className="stat-desc text-current opacity-80 text-sm font-medium">
-                {comparison.isEfficiencyImproved ? 'Lower' : 'Higher'} Consumption
+              <div className="stat-desc text-current opacity-80 text-[10px] uppercase font-black tracking-widest mt-1">
+                {comparison.isEfficiencyImproved ? 'Optimized' : 'High Load'} Output
               </div>
             </div>
           </div>
@@ -91,9 +119,9 @@ function DashboardStats({ stats, car }) {
           {avgConsumption !== null && (
             <div className="stats shadow-2xl w-full bg-carbon border border-industrial-border">
               <div className="stat">
-                <div className="stat-title text-text-secondary">Avg. Consumption</div>
-                <div className="stat-value text-lg text-text-primary">{avgConsumption.toFixed(2)} {unit}</div>
-                <div className="stat-desc text-text-secondary">From {fullTankCount} full fill-ups</div>
+                <div className="stat-title text-text-secondary text-[10px] uppercase font-bold tracking-widest opacity-60">Avg. Consumption</div>
+                <div className="stat-value text-lg text-text-primary font-black italic">{formatValue(avgConsumption)} {unit}</div>
+                <div className="stat-desc text-text-secondary text-[10px] uppercase font-bold tracking-widest opacity-40">From {fullTankCount} full fill-ups</div>
               </div>
             </div>
           )}

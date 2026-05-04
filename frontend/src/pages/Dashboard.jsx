@@ -47,6 +47,7 @@ function Dashboard() {
   const [showFuelModal, setShowFuelModal] = useState(false);
   const [showAddCarModal, setShowAddCarModal] = useState(false);
   const [showAllCars, setShowAllCars] = useState(false);
+  const [useHundredKm, setUseHundredKm] = useState(false);
 
   useEffect(() => {
     if (cars.length === 0 && user) {
@@ -175,7 +176,12 @@ function Dashboard() {
 
           {selectedCar && stats && (
             <>
-              <DashboardStats stats={stats} car={selectedCar} />
+              <DashboardStats 
+                stats={stats} 
+                car={selectedCar} 
+                useHundredKm={useHundredKm} 
+                setUseHundredKm={setUseHundredKm} 
+              />
               <button
                 onClick={() => generateFuelReport(selectedCar, records, stats)}
                 className="btn btn-outline btn-accent w-full mt-4 flex items-center justify-center gap-2 uppercase font-black italic tracking-widest text-xs border-2 shadow-neon hover:bg-accent hover:text-black transition-all duration-300"
@@ -199,6 +205,8 @@ function Dashboard() {
               records={records}
               convertedRecords={convertedRecords}
               car={selectedCar}
+              useHundredKm={useHundredKm}
+              setUseHundredKm={setUseHundredKm}
             />
             
             <PremiumGuard planRequired="PRO">
