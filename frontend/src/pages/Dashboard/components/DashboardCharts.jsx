@@ -52,18 +52,18 @@ function DashboardCharts({ records, convertedRecords, car, useHundredKm, setUseH
           <div className="flex justify-between items-center mb-4">
             <h2 className="card-title text-text-secondary text-xs uppercase tracking-widest">1. Consumption Rate / Time</h2>
             <div className="flex items-center gap-2 bg-asphalt/50 p-1 rounded-sm border border-industrial-border">
-                <button 
-                  onClick={() => setUseHundredKm(false)}
-                  className={`px-2 py-1 text-[9px] font-black uppercase tracking-tighter transition-all rounded-sm ${!useHundredKm ? 'bg-neon-violet text-white shadow-neon' : 'text-text-secondary hover:text-white'}`}
-                >
-                  Distance
-                </button>
-                <button 
-                  onClick={() => setUseHundredKm(true)}
-                  className={`px-2 py-1 text-[9px] font-black uppercase tracking-tighter transition-all rounded-sm ${useHundredKm ? 'bg-neon-violet text-white shadow-neon' : 'text-text-secondary hover:text-white'}`}
-                >
-                  Standard
-                </button>
+              <button
+                onClick={() => setUseHundredKm(false)}
+                className={`px-2 py-1 text-[9px] font-black uppercase tracking-tighter transition-all rounded-sm ${!useHundredKm ? 'bg-neon-violet text-white shadow-neon' : 'text-text-secondary hover:text-white'}`}
+              >
+                Distance
+              </button>
+              <button
+                onClick={() => setUseHundredKm(true)}
+                className={`px-2 py-1 text-[9px] font-black uppercase tracking-tighter transition-all rounded-sm ${useHundredKm ? 'bg-neon-violet text-white shadow-neon' : 'text-text-secondary hover:text-white'}`}
+              >
+                Standard
+              </button>
             </div>
           </div>
           <div className="h-64 overflow-visible">
@@ -79,6 +79,7 @@ function DashboardCharts({ records, convertedRecords, car, useHundredKm, setUseH
                   dataKey="id"
                   axisLine={false}
                   tickLine={false}
+                  padding={{ left: 0, right: 0 }}
                   tick={{ fill: '#475569', fontSize: 10, fontWeight: 'bold' }}
                   dy={10}
                   tickFormatter={(id) => {
@@ -86,7 +87,7 @@ function DashboardCharts({ records, convertedRecords, car, useHundredKm, setUseH
                     return record ? record.xAxisLabel : '';
                   }}
                 />
-                <YAxis axisLine={false} tickLine={false} tick={{ fill: '#475569', fontSize: 10, fontWeight: 'bold' }} dx={-10} />
+                <YAxis axisLine={false} tickLine={false} tick={{ fill: '#475569', fontSize: 10, fontWeight: 'bold' }} dx={-10} domain={[0, 'auto']} />
                 <Tooltip
                   content={<CustomTooltip suffix={` ${unit}`} />}
                   cursor={false}
@@ -124,7 +125,7 @@ function DashboardCharts({ records, convertedRecords, car, useHundredKm, setUseH
                     return record ? record.xAxisLabel : '';
                   }}
                 />
-                <YAxis axisLine={false} tickLine={false} tick={{ fill: '#475569', fontSize: 10, fontWeight: 'bold' }} dx={-10} />
+                <YAxis axisLine={false} tickLine={false} tick={{ fill: '#475569', fontSize: 10, fontWeight: 'bold' }} dx={-10} domain={[0, 'auto']} />
                 <Tooltip
                   content={<CustomTooltip prefix={symbol()} suffix={`${currency} / km`} />}
                   cursor={false}
@@ -162,7 +163,7 @@ function DashboardCharts({ records, convertedRecords, car, useHundredKm, setUseH
                     return record ? record.xAxisLabel : '';
                   }}
                 />
-                <YAxis axisLine={false} tickLine={false} tick={{ fill: '#475569', fontSize: 10, fontWeight: 'bold' }} dx={-10} />
+                <YAxis axisLine={false} tickLine={false} tick={{ fill: '#475569', fontSize: 10, fontWeight: 'bold' }} dx={-10} domain={[0, 'auto']} />
                 <Tooltip
                   content={<CustomTooltip prefix={symbol()} suffix={currency} />}
                   cursor={false}
